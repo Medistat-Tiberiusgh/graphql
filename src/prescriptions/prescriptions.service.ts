@@ -9,7 +9,7 @@ export class PrescriptionsService {
   async findAll(limit: number, offset: number): Promise<Prescription[]> {
     const safeLimit = Math.min(limit, 500);
     const sql = `
-      SELECT year, region, atc AS "atcCode", narcotic_class AS narcoticClass, gender,
+      SELECT year, region, atc AS "atcCode", gender,
              age_group AS "ageGroup", num_prescriptions AS "numberOfPrescriptions",
              num_patients AS "numberOfPatients", per_1000 AS "per1000"
       FROM prescription_data
