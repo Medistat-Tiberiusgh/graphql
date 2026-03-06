@@ -6,7 +6,7 @@ export class Drug {
   atcCode: string;
 
   @Field()
-  atcName: string;
+  name: string;
 
   @Field({ nullable: true })
   narcoticClass?: string;

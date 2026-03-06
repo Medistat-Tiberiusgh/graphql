@@ -1,17 +1,22 @@
 import { Injectable } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service';
 import { Drug } from './drug.model';
 
 @Injectable()
 export class DrugsService {
-  private drugs: Drug[] = [
-    { atcCode: 'A02BC01', atcName: 'Omeprazol', narcoticClass: undefined },
-  ];
+  constructor(private readonly db: DatabaseService) {}
 
-  findAll(): Drug[] {
-    return this.drugs;
+  async findAll(): Promise<Drug[]> {
+    const sql =
+      'SELECT atc AS "atcCode", name, narcotic_class AS "narcoticClass" FROM drugs';
+    return this.db.query<Drug>(sql);
   }
 
-  findOne(atcCode: string): Drug | undefined {
-    return this.drugs.find((d) => d.atcCode === atcCode);
+  async findOne(atcCode: string): Promise<Drug | undefined> {
+    const sql =
+      'SELECT atc AS "atcCode", name, narcotic_class AS "narcoticClass" FROM drugs WHERE atc = $1';
+    const params = [atcCode];
+    const rows = await this.db.query<Drug>(sql, params);
+    return rows[0];
   }
 }
