@@ -7,6 +7,7 @@ import { DatabaseModule } from './database/database.module';
 import { PrescriptionsModule } from './prescriptions/prescriptions.module';
 import { DrugsModule } from './drugs/drugs.module';
 import { RegionsModule } from './regions/regions.module';
+import { AgeGroupsModule } from './age-groups/age-groups.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { RegionsModule } from './regions/regions.module';
     PrescriptionsModule,
     DrugsModule,
     RegionsModule,
+    AgeGroupsModule,
   ],
 })
 export class AppModule {}
