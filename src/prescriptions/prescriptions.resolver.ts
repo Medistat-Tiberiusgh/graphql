@@ -7,7 +7,10 @@ export class PrescriptionsResolver {
   constructor(private readonly prescriptionsService: PrescriptionsService) {}
 
   @Query(() => [Prescription])
-  async prescriptions(): Promise<Prescription[]> {
-    return this.prescriptionsService.findAll();
+  async prescriptions(
+    @Args('limit', { type: () => Int, defaultValue: 20 }) limit: number,
+    @Args('offset', { type: () => Int, defaultValue: 0 }) offset: number,
+  ): Promise<Prescription[]> {
+    return this.prescriptionsService.findAll(limit, offset);
   }
 }
