@@ -1,27 +1,18 @@
 import { Injectable } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service';
 import { Prescription } from './prescription.model';
 
 @Injectable()
 export class PrescriptionsService {
-  private prescriptions: Prescription[] = [
-    {
-      id: 1,
-      year: 2023,
-      region: 'SE-AB',
-      atcCode: 'A02BC01',
-      sex: 'K',
-      ageGroup: '35-44',
-      numberOfDispensings: 1500,
-      numberOfPatients: 800,
-      per1000: 45.2,
-    },
-  ];
+  constructor(private readonly db: DatabaseService) {}
 
-  findAll(): Prescription[] {
-    return this.prescriptions;
-  }
-
-  findOne(id: number): Prescription | undefined {
-    return this.prescriptions.find((p) => p.id === id);
+  async findAll(): Promise<Prescription[]> {
+    const sql = `
+      SELECT year, region, atc AS "atcCode", narcotic_class AS narcoticClass, gender,
+             age_group AS "ageGroup", num_prescriptions AS "numberOfPrescriptions",
+             num_patients AS "numberOfPatients", per_1000 AS "per1000"
+      FROM prescription_data
+    `;
+    return this.db.query<Prescription>(sql);
   }
 }

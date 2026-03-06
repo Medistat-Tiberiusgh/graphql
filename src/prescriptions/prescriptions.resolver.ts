@@ -7,12 +7,7 @@ export class PrescriptionsResolver {
   constructor(private readonly prescriptionsService: PrescriptionsService) {}
 
   @Query(() => [Prescription])
-  prescriptions(): Prescription[] {
+  async prescriptions(): Promise<Prescription[]> {
     return this.prescriptionsService.findAll();
-  }
-
-  @Query(() => Prescription, { nullable: true })
-  prescription(@Args('id', { type: () => Int }) id: number): Prescription | undefined {
-    return this.prescriptionsService.findOne(id);
   }
 }
