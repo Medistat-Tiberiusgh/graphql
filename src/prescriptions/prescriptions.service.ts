@@ -25,6 +25,13 @@ export class PrescriptionsService {
     return rows[0];
   }
 
+  private validateNumericFields(numberOfPrescriptions: number, numberOfPatients: number, per1000: number): void {
+    if (numberOfPrescriptions < 0) throw new BadRequestException('numberOfPrescriptions must be >= 0');
+    if (numberOfPatients < 0) throw new BadRequestException('numberOfPatients must be >= 0');
+    if (per1000 < 0) throw new BadRequestException('per1000 must be >= 0');
+    if (numberOfPrescriptions < numberOfPatients) throw new BadRequestException('numberOfPrescriptions must be >= numberOfPatients');
+  }
+
   async create(
     year: number, region: number, atcCode: string, gender: number, ageGroup: number,
     numberOfPrescriptions: number, numberOfPatients: number, per1000: number,
@@ -33,6 +40,21 @@ export class PrescriptionsService {
     if (year < 2006 || year > currentYear) {
       throw new BadRequestException(`year must be between 2006 and ${currentYear}`);
     }
+    this.validateNumericFields(numberOfPrescriptions, numberOfPatients, per1000);
+
+    const [regionRows, drugRows, genderRows, ageGroupRows] = await Promise.all([
+      this.db.query('SELECT id FROM regions WHERE id = $1', [region]),
+      this.db.query('SELECT atc FROM drugs WHERE atc = $1', [atcCode]),
+      this.db.query('SELECT id FROM genders WHERE id = $1', [gender]),
+      this.db.query('SELECT id FROM age_groups WHERE id = $1', [ageGroup]),
+    ]);
+
+    const errors: string[] = [];
+    if (regionRows.length === 0) errors.push(`region with id ${region} does not exist`);
+    if (drugRows.length === 0) errors.push(`drug with atcCode ${atcCode} does not exist`);
+    if (genderRows.length === 0) errors.push(`gender with id ${gender} does not exist`);
+    if (ageGroupRows.length === 0) errors.push(`ageGroup with id ${ageGroup} does not exist`);
+    if (errors.length > 0) throw new BadRequestException(errors.join(', '));
 
     const sql = `
       INSERT INTO prescription_data (year, region, atc, gender, age_group, num_prescriptions, num_patients, per_1000)
@@ -48,6 +70,8 @@ export class PrescriptionsService {
     year: number, region: number, atcCode: string, gender: number, ageGroup: number,
     numberOfPrescriptions: number, numberOfPatients: number, per1000: number,
   ): Promise<Prescription | undefined> {
+    this.validateNumericFields(numberOfPrescriptions, numberOfPatients, per1000);
+
     const sql = `
       UPDATE prescription_data
       SET num_prescriptions = $6, num_patients = $7, per_1000 = $8
