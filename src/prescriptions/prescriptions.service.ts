@@ -18,7 +18,8 @@ export class PrescriptionsService {
     offset: number,
     filters: { year?: number; region?: number; atcCode?: string; gender?: number; ageGroup?: number },
   ): Promise<PrescriptionsConnection> {
-    const safeLimit = Math.min(limit, 500);
+    if (limit > 500) throw new BadRequestException('limit must not exceed 500');
+    const safeLimit = limit;
 
     // Build WHERE clause dynamically from whichever filters were provided
     const conditions: string[] = [];
