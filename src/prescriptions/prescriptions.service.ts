@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { Prescription } from './prescription.model';
+import { Prescription, PrescriptionsConnection } from './prescription.model';
 
 const SELECT = `
   SELECT year, region, atc AS "atcCode", gender,
@@ -13,10 +13,19 @@ const SELECT = `
 export class PrescriptionsService {
   constructor(private readonly db: DatabaseService) {}
 
-  async findAll(limit: number, offset: number): Promise<Prescription[]> {
+  async findAll(limit: number, offset: number): Promise<PrescriptionsConnection> {
     const safeLimit = Math.min(limit, 500);
-    const sql = `${SELECT} LIMIT $1 OFFSET $2`;
-    return this.db.query<Prescription>(sql, [safeLimit, offset]);
+    const [items, countRows] = await Promise.all([
+      this.db.query<Prescription>(`${SELECT} LIMIT $1 OFFSET $2`, [safeLimit, offset]),
+      this.db.query<{ count: string }>('SELECT COUNT(*) AS count FROM prescription_data', []),
+    ]);
+    const totalCount = parseInt(countRows[0].count, 10);
+    return {
+      items,
+      totalCount,
+      hasNextPage: offset + safeLimit < totalCount,
+      hasPreviousPage: offset > 0,
+    };
   }
 
   async findOne(year: number, region: number, atcCode: string, gender: number, ageGroup: number): Promise<Prescription | undefined> {
