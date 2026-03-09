@@ -13,12 +13,30 @@ const SELECT = `
 export class PrescriptionsService {
   constructor(private readonly db: DatabaseService) {}
 
-  async findAll(limit: number, offset: number): Promise<PrescriptionsConnection> {
+  async findAll(
+    limit: number,
+    offset: number,
+    filters: { year?: number; region?: number; atcCode?: string; gender?: number; ageGroup?: number },
+  ): Promise<PrescriptionsConnection> {
     const safeLimit = Math.min(limit, 500);
+
+    // Build WHERE clause dynamically from whichever filters were provided
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (filters.year !== undefined) { params.push(filters.year); conditions.push(`year = $${params.length}`); }
+    if (filters.region !== undefined) { params.push(filters.region); conditions.push(`region = $${params.length}`); }
+    if (filters.atcCode !== undefined) { params.push(filters.atcCode); conditions.push(`atc = $${params.length}`); }
+    if (filters.gender !== undefined) { params.push(filters.gender); conditions.push(`gender = $${params.length}`); }
+    if (filters.ageGroup !== undefined) { params.push(filters.ageGroup); conditions.push(`age_group = $${params.length}`); }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
     const [items, countRows] = await Promise.all([
-      this.db.query<Prescription>(`${SELECT} LIMIT $1 OFFSET $2`, [safeLimit, offset]),
-      this.db.query<{ count: string }>('SELECT COUNT(*) AS count FROM prescription_data', []),
+      this.db.query<Prescription>(`${SELECT} ${where} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`, [...params, safeLimit, offset]),
+      this.db.query<{ count: string }>(`SELECT COUNT(*) AS count FROM prescription_data ${where}`, params),
     ]);
+
     const totalCount = parseInt(countRows[0].count, 10);
     return {
       items,
