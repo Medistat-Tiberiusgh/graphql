@@ -1,4 +1,4 @@
-import { Args, Int, Query, Resolver } from '@nestjs/graphql';
+import { Args, Float, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Prescription } from './prescription.model';
 import { PrescriptionsService } from './prescriptions.service';
 
@@ -12,5 +12,55 @@ export class PrescriptionsResolver {
     @Args('offset', { type: () => Int, defaultValue: 0 }) offset: number,
   ): Promise<Prescription[]> {
     return this.prescriptionsService.findAll(limit, offset);
+  }
+
+  @Query(() => Prescription, { nullable: true })
+  async prescription(
+    @Args('year', { type: () => Int }) year: number,
+    @Args('region', { type: () => Int }) region: number,
+    @Args('atcCode') atcCode: string,
+    @Args('gender', { type: () => Int }) gender: number,
+    @Args('ageGroup', { type: () => Int }) ageGroup: number,
+  ): Promise<Prescription | undefined> {
+    return this.prescriptionsService.findOne(year, region, atcCode, gender, ageGroup);
+  }
+
+  @Mutation(() => Prescription)
+  async createPrescription(
+    @Args('year', { type: () => Int }) year: number,
+    @Args('region', { type: () => Int }) region: number,
+    @Args('atcCode') atcCode: string,
+    @Args('gender', { type: () => Int }) gender: number,
+    @Args('ageGroup', { type: () => Int }) ageGroup: number,
+    @Args('numberOfPrescriptions', { type: () => Int }) numberOfPrescriptions: number,
+    @Args('numberOfPatients', { type: () => Int }) numberOfPatients: number,
+    @Args('per1000', { type: () => Float }) per1000: number,
+  ): Promise<Prescription> {
+    return this.prescriptionsService.create(year, region, atcCode, gender, ageGroup, numberOfPrescriptions, numberOfPatients, per1000);
+  }
+
+  @Mutation(() => Prescription, { nullable: true })
+  async updatePrescription(
+    @Args('year', { type: () => Int }) year: number,
+    @Args('region', { type: () => Int }) region: number,
+    @Args('atcCode') atcCode: string,
+    @Args('gender', { type: () => Int }) gender: number,
+    @Args('ageGroup', { type: () => Int }) ageGroup: number,
+    @Args('numberOfPrescriptions', { type: () => Int }) numberOfPrescriptions: number,
+    @Args('numberOfPatients', { type: () => Int }) numberOfPatients: number,
+    @Args('per1000', { type: () => Float }) per1000: number,
+  ): Promise<Prescription | undefined> {
+    return this.prescriptionsService.update(year, region, atcCode, gender, ageGroup, numberOfPrescriptions, numberOfPatients, per1000);
+  }
+
+  @Mutation(() => Boolean)
+  async deletePrescription(
+    @Args('year', { type: () => Int }) year: number,
+    @Args('region', { type: () => Int }) region: number,
+    @Args('atcCode') atcCode: string,
+    @Args('gender', { type: () => Int }) gender: number,
+    @Args('ageGroup', { type: () => Int }) ageGroup: number,
+  ): Promise<boolean> {
+    return this.prescriptionsService.delete(year, region, atcCode, gender, ageGroup);
   }
 }
