@@ -3,6 +3,8 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 export const graphqlConfig: ApolloDriverConfig = {
   driver: ApolloDriver,
   autoSchemaFile: true,
+  playground: false,
+  graphiql: true,
   formatError: (error) => {
     console.error(error);
     const originalError = error.extensions?.originalError as any;
