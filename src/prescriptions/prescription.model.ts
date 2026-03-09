@@ -5,17 +5,17 @@ export class Prescription {
   @Field(() => Int)
   year: number;
 
-  @Field()
-  region: string;
+  @Field(() => Int)
+  region: number;
 
   @Field()
   atcCode: string;
 
-  @Field()
-  gender: string;
+  @Field(() => Int)
+  gender: number;
 
-  @Field()
-  ageGroup: string;
+  @Field(() => Int)
+  ageGroup: number;
 
   @Field(() => Int)
   numberOfPrescriptions: number;
