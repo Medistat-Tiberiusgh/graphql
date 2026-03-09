@@ -10,8 +10,13 @@ export class PrescriptionsResolver {
   async prescriptions(
     @Args('limit', { type: () => Int, defaultValue: 20 }) limit: number,
     @Args('offset', { type: () => Int, defaultValue: 0 }) offset: number,
+    @Args('year', { type: () => Int, nullable: true }) year?: number,
+    @Args('region', { type: () => Int, nullable: true }) region?: number,
+    @Args('atcCode', { nullable: true }) atcCode?: string,
+    @Args('gender', { type: () => Int, nullable: true }) gender?: number,
+    @Args('ageGroup', { type: () => Int, nullable: true }) ageGroup?: number,
   ): Promise<PrescriptionsConnection> {
-    return this.prescriptionsService.findAll(limit, offset);
+    return this.prescriptionsService.findAll(limit, offset, { year, region, atcCode, gender, ageGroup });
   }
 
   @Query(() => Prescription, { nullable: true })
