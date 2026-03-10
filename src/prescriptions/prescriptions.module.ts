@@ -6,6 +6,10 @@ import { PrescriptionsService } from './prescriptions.service';
 
 @Module({
   imports: [DatabaseModule],
-  providers: [PrescriptionsResolver, PrescriptionsService, PrescriptionDataLoaders],
+  providers: [
+    PrescriptionsResolver,
+    PrescriptionsService,
+    PrescriptionDataLoaders,
+  ],
 })
 export class PrescriptionsModule {}

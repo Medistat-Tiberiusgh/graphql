@@ -12,7 +12,8 @@ export class RegionsService {
   }
 
   async findOne(regionCode: string): Promise<Region | undefined> {
-    const sql = 'SELECT id AS "regionCode", name AS "regionName" FROM regions WHERE id = $1';
+    const sql =
+      'SELECT id AS "regionCode", name AS "regionName" FROM regions WHERE id = $1';
     const params = [regionCode];
     const rows = await this.db.query<Region>(sql, params);
     return rows[0];

@@ -12,7 +12,9 @@ export class AgeGroupsResolver {
   }
 
   @Query(() => AgeGroup, { nullable: true })
-  async ageGroup(@Args('id', { type: () => Int }) id: number): Promise<AgeGroup | undefined> {
+  async ageGroup(
+    @Args('id', { type: () => Int }) id: number,
+  ): Promise<AgeGroup | undefined> {
     return this.ageGroupsService.findOne(id);
   }
 }

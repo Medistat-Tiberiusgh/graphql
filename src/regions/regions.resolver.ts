@@ -12,7 +12,9 @@ export class RegionsResolver {
   }
 
   @Query(() => Region, { nullable: true })
-  async region(@Args('regionCode') regionCode: string): Promise<Region | undefined> {
+  async region(
+    @Args('regionCode') regionCode: string,
+  ): Promise<Region | undefined> {
     return this.regionsService.findOne(regionCode);
   }
 }
