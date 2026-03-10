@@ -1,4 +1,4 @@
-import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
+import { Field, Float, ID, Int, ObjectType } from '@nestjs/graphql';
 import { Drug } from '../drugs/drug.model';
 import { Region } from '../regions/region.model';
 
@@ -19,6 +19,9 @@ export class PrescriptionsConnection {
 
 @ObjectType()
 export class Prescription {
+  @Field(() => ID)
+  id: string;
+
   @Field(() => Int)
   year: number;
 
