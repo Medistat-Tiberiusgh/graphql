@@ -3,17 +3,25 @@ import { Prescription, PrescriptionsConnection } from './prescription.model';
 import { PrescriptionsService } from './prescriptions.service';
 import { DrugsService } from '../drugs/drugs.service';
 import { Drug } from '../drugs/drug.model';
+import { RegionsService } from '../regions/regions.service';
+import { Region } from '../regions/region.model';
 
 @Resolver(() => Prescription)
 export class PrescriptionsResolver {
   constructor(
     private readonly prescriptionsService: PrescriptionsService,
     private readonly drugsService: DrugsService,
+    private readonly regionsService: RegionsService,
   ) {}
 
   @ResolveField(() => Drug, { nullable: true })
   async drug(@Parent() prescription: Prescription): Promise<Drug | undefined> {
     return this.drugsService.findOne(prescription.atcCode);
+  }
+
+  @ResolveField(() => Region, { nullable: true })
+  async regionData(@Parent() prescription: Prescription): Promise<Region | undefined> {
+    return this.regionsService.findOne(String(prescription.region));
   }
 
   @Query(() => PrescriptionsConnection)

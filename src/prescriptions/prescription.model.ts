@@ -1,5 +1,6 @@
 import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
 import { Drug } from '../drugs/drug.model';
+import { Region } from '../regions/region.model';
 
 @ObjectType()
 export class PrescriptionsConnection {
@@ -44,4 +45,7 @@ export class Prescription {
 
   @Field(() => Drug, { nullable: true })
   drug?: Drug;
+
+  @Field(() => Region, { nullable: true })
+  regionData?: Region;
 }
