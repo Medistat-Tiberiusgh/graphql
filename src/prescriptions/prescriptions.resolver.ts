@@ -1,6 +1,7 @@
 import {
   Args,
   Float,
+  ID,
   Int,
   Mutation,
   Query,
@@ -20,6 +21,13 @@ export class PrescriptionsResolver {
     private readonly prescriptionsService: PrescriptionsService,
     private readonly loaders: PrescriptionDataLoaders,
   ) {}
+
+  @ResolveField(() => ID)
+  id(@Parent() prescription: Prescription): string {
+    return Buffer.from(
+      `${prescription.year}:${prescription.region}:${prescription.atcCode}:${prescription.gender}:${prescription.ageGroup}`,
+    ).toString('base64');
+  }
 
   @ResolveField(() => Drug, { nullable: true })
   async drug(@Parent() prescription: Prescription): Promise<Drug | undefined> {
@@ -54,18 +62,17 @@ export class PrescriptionsResolver {
 
   @Query(() => Prescription, { nullable: true })
   async prescription(
-    @Args('year', { type: () => Int }) year: number,
-    @Args('region', { type: () => Int }) region: number,
-    @Args('atcCode') atcCode: string,
-    @Args('gender', { type: () => Int }) gender: number,
-    @Args('ageGroup', { type: () => Int }) ageGroup: number,
+    @Args('id', { type: () => ID }) id: string,
   ): Promise<Prescription | undefined> {
+    const [year, region, atcCode, gender, ageGroup] = Buffer.from(id, 'base64')
+      .toString()
+      .split(':');
     return this.prescriptionsService.findOne(
-      year,
-      region,
+      +year,
+      +region,
       atcCode,
-      gender,
-      ageGroup,
+      +gender,
+      +ageGroup,
     );
   }
 
