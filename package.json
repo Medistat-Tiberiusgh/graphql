@@ -22,6 +22,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/graphql": "^13.2.4",
     "@nestjs/platform-express": "^11.0.1",
+    "dataloader": "^2.2.3",
     "graphql": "^16.13.0",
     "pg": "^8.19.0",
     "reflect-metadata": "^0.2.2",
