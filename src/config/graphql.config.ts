@@ -9,10 +9,17 @@ export const graphqlConfig: ApolloDriverConfig = {
     console.error(error);
     const originalError = error.extensions?.originalError as any;
     if (originalError?.statusCode === 400) {
-      return { message: originalError.message, extensions: { code: 'BAD_USER_INPUT' } };
+      return {
+        message: originalError.message,
+        extensions: { code: 'BAD_USER_INPUT' },
+      };
     }
     const code = error.extensions?.code as string;
-    const clientErrorCodes = ['GRAPHQL_PARSE_FAILED', 'GRAPHQL_VALIDATION_FAILED', 'BAD_USER_INPUT'];
+    const clientErrorCodes = [
+      'GRAPHQL_PARSE_FAILED',
+      'GRAPHQL_VALIDATION_FAILED',
+      'BAD_USER_INPUT',
+    ];
     if (clientErrorCodes.includes(code)) {
       const { stacktrace, ...extensions } = error.extensions ?? {};
       return { ...error, extensions };

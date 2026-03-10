@@ -1,4 +1,13 @@
-import { Args, Float, Int, Mutation, Query, ResolveField, Resolver, Parent } from '@nestjs/graphql';
+import {
+  Args,
+  Float,
+  Int,
+  Mutation,
+  Query,
+  ResolveField,
+  Resolver,
+  Parent,
+} from '@nestjs/graphql';
 import { Prescription, PrescriptionsConnection } from './prescription.model';
 import { PrescriptionsService } from './prescriptions.service';
 import { PrescriptionDataLoaders } from './prescription.dataloaders';
@@ -18,7 +27,9 @@ export class PrescriptionsResolver {
   }
 
   @ResolveField(() => Region, { nullable: true })
-  async regionData(@Parent() prescription: Prescription): Promise<Region | undefined> {
+  async regionData(
+    @Parent() prescription: Prescription,
+  ): Promise<Region | undefined> {
     return this.loaders.regionById.load(String(prescription.region));
   }
 
@@ -32,7 +43,13 @@ export class PrescriptionsResolver {
     @Args('gender', { type: () => Int, nullable: true }) gender?: number,
     @Args('ageGroup', { type: () => Int, nullable: true }) ageGroup?: number,
   ): Promise<PrescriptionsConnection> {
-    return this.prescriptionsService.findAll(limit, offset, { year, region, atcCode, gender, ageGroup });
+    return this.prescriptionsService.findAll(limit, offset, {
+      year,
+      region,
+      atcCode,
+      gender,
+      ageGroup,
+    });
   }
 
   @Query(() => Prescription, { nullable: true })
@@ -43,7 +60,13 @@ export class PrescriptionsResolver {
     @Args('gender', { type: () => Int }) gender: number,
     @Args('ageGroup', { type: () => Int }) ageGroup: number,
   ): Promise<Prescription | undefined> {
-    return this.prescriptionsService.findOne(year, region, atcCode, gender, ageGroup);
+    return this.prescriptionsService.findOne(
+      year,
+      region,
+      atcCode,
+      gender,
+      ageGroup,
+    );
   }
 
   @Mutation(() => Prescription)
@@ -53,11 +76,21 @@ export class PrescriptionsResolver {
     @Args('atcCode') atcCode: string,
     @Args('gender', { type: () => Int }) gender: number,
     @Args('ageGroup', { type: () => Int }) ageGroup: number,
-    @Args('numberOfPrescriptions', { type: () => Int }) numberOfPrescriptions: number,
+    @Args('numberOfPrescriptions', { type: () => Int })
+    numberOfPrescriptions: number,
     @Args('numberOfPatients', { type: () => Int }) numberOfPatients: number,
     @Args('per1000', { type: () => Float }) per1000: number,
   ): Promise<Prescription> {
-    return this.prescriptionsService.create(year, region, atcCode, gender, ageGroup, numberOfPrescriptions, numberOfPatients, per1000);
+    return this.prescriptionsService.create(
+      year,
+      region,
+      atcCode,
+      gender,
+      ageGroup,
+      numberOfPrescriptions,
+      numberOfPatients,
+      per1000,
+    );
   }
 
   @Mutation(() => Prescription, { nullable: true })
@@ -67,11 +100,21 @@ export class PrescriptionsResolver {
     @Args('atcCode') atcCode: string,
     @Args('gender', { type: () => Int }) gender: number,
     @Args('ageGroup', { type: () => Int }) ageGroup: number,
-    @Args('numberOfPrescriptions', { type: () => Int }) numberOfPrescriptions: number,
+    @Args('numberOfPrescriptions', { type: () => Int })
+    numberOfPrescriptions: number,
     @Args('numberOfPatients', { type: () => Int }) numberOfPatients: number,
     @Args('per1000', { type: () => Float }) per1000: number,
   ): Promise<Prescription | undefined> {
-    return this.prescriptionsService.update(year, region, atcCode, gender, ageGroup, numberOfPrescriptions, numberOfPatients, per1000);
+    return this.prescriptionsService.update(
+      year,
+      region,
+      atcCode,
+      gender,
+      ageGroup,
+      numberOfPrescriptions,
+      numberOfPatients,
+      per1000,
+    );
   }
 
   @Mutation(() => Boolean)
@@ -82,6 +125,12 @@ export class PrescriptionsResolver {
     @Args('gender', { type: () => Int }) gender: number,
     @Args('ageGroup', { type: () => Int }) ageGroup: number,
   ): Promise<boolean> {
-    return this.prescriptionsService.delete(year, region, atcCode, gender, ageGroup);
+    return this.prescriptionsService.delete(
+      year,
+      region,
+      atcCode,
+      gender,
+      ageGroup,
+    );
   }
 }
