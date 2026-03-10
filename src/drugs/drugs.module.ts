@@ -6,5 +6,6 @@ import { DrugsService } from './drugs.service';
 @Module({
   imports: [DatabaseModule],
   providers: [DrugsResolver, DrugsService],
+  exports: [DrugsService],
 })
 export class DrugsModule {}
