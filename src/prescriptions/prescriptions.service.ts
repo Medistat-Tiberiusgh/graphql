@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { AppError } from '../common/app-error';
 import { DatabaseService } from '../database/database.service';
 import { Prescription, PrescriptionsConnection } from './prescription.model';
 
@@ -24,7 +25,7 @@ export class PrescriptionsService {
       ageGroup?: number;
     },
   ): Promise<PrescriptionsConnection> {
-    if (limit > 500) throw new BadRequestException('limit must not exceed 500');
+    if (limit > 500) throw new AppError('limit must not exceed 500', 'BAD_USER_INPUT');
     const safeLimit = limit;
 
     // Build WHERE clause dynamically from whichever filters were provided
@@ -144,7 +145,7 @@ export class PrescriptionsService {
       errors.push(`gender with id ${gender} does not exist`);
     if (ageGroupRows.length === 0)
       errors.push(`ageGroup with id ${ageGroup} does not exist`);
-    if (errors.length > 0) throw new BadRequestException(errors.join('\n'));
+    if (errors.length > 0) throw new AppError(errors.join('\n'), 'BAD_USER_INPUT');
 
     const sql = `
       INSERT INTO prescription_data (year, region, atc, gender, age_group, num_prescriptions, num_patients, per_1000)
@@ -180,7 +181,7 @@ export class PrescriptionsService {
       numberOfPatients,
       per1000,
     );
-    if (errors.length > 0) throw new BadRequestException(errors.join('\n\n'));
+    if (errors.length > 0) throw new AppError(errors.join('\n\n'), 'BAD_USER_INPUT');
 
     const sql = `
       UPDATE prescription_data

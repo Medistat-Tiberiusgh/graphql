@@ -1,6 +1,7 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { GqlExecutionContext } from '@nestjs/graphql';
+import { AppError } from '../common/app-error';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -12,19 +13,19 @@ export class JwtAuthGuard implements CanActivate {
 
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      throw new UnauthorizedException('No token provided');
+      throw new AppError('No token provided', 'UNAUTHENTICATED');
     }
 
     const [type, token] = authHeader.split(' ');
     if (type !== 'Bearer' || !token) {
-      throw new UnauthorizedException('Invalid token format');
+      throw new AppError('Invalid token format', 'UNAUTHENTICATED');
     }
 
     try {
       this.jwtService.verify(token);
       return true;
     } catch {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw new AppError('Invalid or expired token', 'UNAUTHENTICATED');
     }
   }
 }
