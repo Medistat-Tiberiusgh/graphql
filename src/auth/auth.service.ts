@@ -13,6 +13,31 @@ export class AuthService {
   ) {}
 
   async register(username: string, password: string): Promise<AuthPayload> {
+    if (!username || username.trim().length === 0) {
+      throw new AppError(
+        'You forgot to provide the username',
+        'BAD_USER_INPUT',
+      );
+    }
+    if (username.length > 50) {
+      throw new AppError(
+        'No weird and long usernames. Pick one that is under 50 characters',
+        'BAD_USER_INPUT',
+      );
+    }
+    if (password.length < 6) {
+      throw new AppError(
+        'Password must be at least 6 characters',
+        'BAD_USER_INPUT',
+      );
+    }
+    if (password.length > 100) {
+      throw new AppError(
+        'Password must not exceed 100 characters',
+        'BAD_USER_INPUT',
+      );
+    }
+
     const existing = await this.usersService.findByUsername(username);
     if (existing) {
       throw new AppError('Username already taken', 'CONFLICT');
