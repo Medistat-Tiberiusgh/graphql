@@ -1,12 +1,9 @@
-import {
-  ConflictException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthPayload } from './auth.model';
+import { AppError } from '../common/app-error';
 
 @Injectable()
 export class AuthService {
@@ -18,7 +15,7 @@ export class AuthService {
   async register(username: string, password: string): Promise<AuthPayload> {
     const existing = await this.usersService.findByUsername(username);
     if (existing) {
-      throw new ConflictException('Username already taken');
+      throw new AppError('Username already taken', 'CONFLICT');
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -34,12 +31,12 @@ export class AuthService {
   async login(username: string, password: string): Promise<AuthPayload> {
     const user = await this.usersService.findByUsername(username);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new AppError('Invalid credentials', 'UNAUTHENTICATED');
     }
 
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new AppError('Invalid credentials', 'UNAUTHENTICATED');
     }
 
     const token = this.jwtService.sign({
