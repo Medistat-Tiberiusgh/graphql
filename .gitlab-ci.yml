@@ -1,5 +1,6 @@
 stages:
   - build
+  - deploy
 
 build-image:
   stage: build
@@ -14,5 +15,15 @@ build-image:
       --destination $CI_REGISTRY_IMAGE:latest
   before_script:
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n $CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD | base64)\"}}}" > /kaniko/.docker/config.json
+  only:
+    - main
+
+deploy:
+  stage: deploy
+  image: alpine
+  before_script:
+    - apk add curl
+  script:
+    - curl -X POST $WEBHOOK_URL -H "X-Gitlab-Token: $WEBHOOK_TOKEN"
   only:
     - main
