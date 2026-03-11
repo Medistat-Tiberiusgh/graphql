@@ -9,12 +9,14 @@ import { DrugsModule } from './drugs/drugs.module';
 import { RegionsModule } from './regions/regions.module';
 import { AgeGroupsModule } from './age-groups/age-groups.module';
 import { GendersModule } from './genders/genders.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     GraphQLModule.forRoot<ApolloDriverConfig>(graphqlConfig),
     DatabaseModule,
+    AuthModule,
     PrescriptionsModule,
     DrugsModule,
     RegionsModule,
