@@ -7,40 +7,40 @@ import {
   Resolver,
   Parent,
 } from '@nestjs/graphql';
-import { Prescription, PrescriptionsConnection } from './prescription.model';
-import { PrescriptionsService } from './prescriptions.service';
-import { PrescriptionDataLoaders } from './prescription.dataloaders';
+import { Statistic, StatisticsConnection } from './statistics.model';
+import { StatisticsService } from './statistics.service';
+import { StatisticsDataLoaders } from './statistics.dataloaders';
 import { Drug } from '../drugs/drug.model';
 import { Region } from '../regions/region.model';
 
-@Resolver(() => Prescription)
-export class PrescriptionsResolver {
+@Resolver(() => Statistic)
+export class StatisticsResolver {
   constructor(
-    private readonly prescriptionsService: PrescriptionsService,
-    private readonly loaders: PrescriptionDataLoaders,
+    private readonly statisticsService: StatisticsService,
+    private readonly loaders: StatisticsDataLoaders,
   ) {}
 
   @ResolveField(() => ID)
-  id(@Parent() prescription: Prescription): string {
+  id(@Parent() statistic: Statistic): string {
     return Buffer.from(
-      `${prescription.year}:${prescription.region}:${prescription.atcCode}:${prescription.gender}:${prescription.ageGroup}`,
+      `${statistic.year}:${statistic.region}:${statistic.atcCode}:${statistic.gender}:${statistic.ageGroup}`,
     ).toString('base64');
   }
 
   @ResolveField(() => Drug, { nullable: true })
-  async drug(@Parent() prescription: Prescription): Promise<Drug | undefined> {
-    return this.loaders.drugByAtcCode.load(prescription.atcCode);
+  async drug(@Parent() statistic: Statistic): Promise<Drug | undefined> {
+    return this.loaders.drugByAtcCode.load(statistic.atcCode);
   }
 
   @ResolveField(() => Region, { nullable: true })
   async regionData(
-    @Parent() prescription: Prescription,
+    @Parent() statistic: Statistic,
   ): Promise<Region | undefined> {
-    return this.loaders.regionById.load(String(prescription.region));
+    return this.loaders.regionById.load(String(statistic.region));
   }
 
-  @Query(() => PrescriptionsConnection)
-  async prescriptions(
+  @Query(() => StatisticsConnection)
+  async statistics(
     @Args('limit', { type: () => Int, defaultValue: 20 }) limit: number,
     @Args('offset', { type: () => Int, defaultValue: 0 }) offset: number,
     @Args('year', { type: () => Int, nullable: true }) year?: number,
@@ -48,8 +48,8 @@ export class PrescriptionsResolver {
     @Args('atcCode', { nullable: true }) atcCode?: string,
     @Args('gender', { type: () => Int, nullable: true }) gender?: number,
     @Args('ageGroup', { type: () => Int, nullable: true }) ageGroup?: number,
-  ): Promise<PrescriptionsConnection> {
-    return this.prescriptionsService.findAll(limit, offset, {
+  ): Promise<StatisticsConnection> {
+    return this.statisticsService.findAll(limit, offset, {
       year,
       region,
       atcCode,
@@ -58,14 +58,14 @@ export class PrescriptionsResolver {
     });
   }
 
-  @Query(() => Prescription, { nullable: true })
-  async prescription(
+  @Query(() => Statistic, { nullable: true })
+  async statistic(
     @Args('id', { type: () => ID }) id: string,
-  ): Promise<Prescription | undefined> {
+  ): Promise<Statistic | undefined> {
     const [year, region, atcCode, gender, ageGroup] = Buffer.from(id, 'base64')
       .toString()
       .split(':');
-    return this.prescriptionsService.findOne(
+    return this.statisticsService.findOne(
       +year,
       +region,
       atcCode,
@@ -73,5 +73,4 @@ export class PrescriptionsResolver {
       +ageGroup,
     );
   }
-
 }

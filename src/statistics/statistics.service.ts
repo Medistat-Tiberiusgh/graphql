@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AppError } from '../common/app-error';
 import { DatabaseService } from '../database/database.service';
-import { Prescription, PrescriptionsConnection } from './prescription.model';
+import { Statistic, StatisticsConnection } from './statistics.model';
 
 const SELECT = `
   SELECT year, region, atc AS "atcCode", gender,
@@ -11,7 +11,7 @@ const SELECT = `
 `;
 
 @Injectable()
-export class PrescriptionsService {
+export class StatisticsService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll(
@@ -24,8 +24,9 @@ export class PrescriptionsService {
       gender?: number;
       ageGroup?: number;
     },
-  ): Promise<PrescriptionsConnection> {
-    if (limit > 500) throw new AppError('limit must not exceed 500', 'BAD_USER_INPUT');
+  ): Promise<StatisticsConnection> {
+    if (limit > 500)
+      throw new AppError('limit must not exceed 500', 'BAD_USER_INPUT');
     const safeLimit = limit;
 
     // Build WHERE clause dynamically from whichever filters were provided
@@ -57,7 +58,7 @@ export class PrescriptionsService {
       conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const [items, countRows] = await Promise.all([
-      this.db.query<Prescription>(
+      this.db.query<Statistic>(
         `${SELECT} ${where} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
         [...params, safeLimit, offset],
       ),
@@ -82,9 +83,9 @@ export class PrescriptionsService {
     atcCode: string,
     gender: number,
     ageGroup: number,
-  ): Promise<Prescription | undefined> {
+  ): Promise<Statistic | undefined> {
     const sql = `${SELECT} WHERE year = $1 AND region = $2 AND atc = $3 AND gender = $4 AND age_group = $5`;
-    const rows = await this.db.query<Prescription>(sql, [
+    const rows = await this.db.query<Statistic>(sql, [
       year,
       region,
       atcCode,
@@ -93,5 +94,4 @@ export class PrescriptionsService {
     ]);
     return rows[0];
   }
-
 }

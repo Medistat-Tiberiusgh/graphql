@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
-import { AppError } from '../common/app-error';
-import { UserMedication } from './user-medication.model';
+import { DatabaseService } from 'src/database/database.service';
+import { AppError } from 'src/common/app-error';
+import { UserMedication } from './medication.model';
 
 @Injectable()
 export class UserMedicationsService {

@@ -5,7 +5,7 @@ import { Drug } from '../drugs/drug.model';
 import { Region } from '../regions/region.model';
 
 @Injectable({ scope: Scope.REQUEST })
-export class PrescriptionDataLoaders {
+export class StatisticsDataLoaders {
   constructor(private readonly db: DatabaseService) {}
 
   readonly drugByAtcCode = new DataLoader<string, Drug | undefined>(

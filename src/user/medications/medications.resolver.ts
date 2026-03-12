@@ -3,8 +3,8 @@ import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/current-user.decorator';
-import { UserMedication } from './user-medication.model';
-import { UserMedicationsService } from './user-medications.service';
+import { UserMedication } from './medication.model';
+import { UserMedicationsService } from './medications.service';
 
 @Resolver(() => UserMedication)
 @UseGuards(JwtAuthGuard)

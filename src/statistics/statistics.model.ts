@@ -3,9 +3,9 @@ import { Drug } from '../drugs/drug.model';
 import { Region } from '../regions/region.model';
 
 @ObjectType()
-export class PrescriptionsConnection {
-  @Field(() => [Prescription])
-  items: Prescription[];
+export class StatisticsConnection {
+  @Field(() => [Statistic])
+  items: Statistic[];
 
   @Field(() => Int)
   totalCount: number;
@@ -18,7 +18,7 @@ export class PrescriptionsConnection {
 }
 
 @ObjectType()
-export class Prescription {
+export class Statistic {
   @Field(() => ID)
   id: string;
 

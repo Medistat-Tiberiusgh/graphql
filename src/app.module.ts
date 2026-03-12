@@ -4,13 +4,13 @@ import { ApolloDriverConfig } from '@nestjs/apollo';
 import { ConfigModule } from '@nestjs/config';
 import { graphqlConfig } from './config/graphql.config';
 import { DatabaseModule } from './database/database.module';
-import { PrescriptionsModule } from './prescriptions/prescriptions.module';
+import { StatisticsModule } from './statistics/statistics.module';
 import { DrugsModule } from './drugs/drugs.module';
 import { RegionsModule } from './regions/regions.module';
 import { AgeGroupsModule } from './age-groups/age-groups.module';
 import { GendersModule } from './genders/genders.module';
-import { AuthModule } from './auth/auth.module';
-import { UserMedicationsModule } from './user-medications/user-medications.module';
+import { AuthModule } from './user/auth/auth.module';
+import { UserMedicationsModule } from './user/medications/medications.module';
 
 @Module({
   imports: [
@@ -18,7 +18,7 @@ import { UserMedicationsModule } from './user-medications/user-medications.modul
     GraphQLModule.forRoot<ApolloDriverConfig>(graphqlConfig),
     DatabaseModule,
     AuthModule,
-    PrescriptionsModule,
+    StatisticsModule,
     DrugsModule,
     RegionsModule,
     AgeGroupsModule,
