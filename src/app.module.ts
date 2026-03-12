@@ -10,6 +10,7 @@ import { RegionsModule } from './regions/regions.module';
 import { AgeGroupsModule } from './age-groups/age-groups.module';
 import { GendersModule } from './genders/genders.module';
 import { AuthModule } from './auth/auth.module';
+import { UserMedicationsModule } from './user-medications/user-medications.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AuthModule } from './auth/auth.module';
     RegionsModule,
     AgeGroupsModule,
     GendersModule,
+    UserMedicationsModule,
   ],
 })
 export class AppModule {}
