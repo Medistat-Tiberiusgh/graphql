@@ -14,8 +14,21 @@ export class UserMedicationsService {
     );
   }
 
-  async add(userId: number, atc: string, notes?: string): Promise<UserMedication> {
-    const drug = await this.db.query('SELECT atc FROM drugs WHERE atc = $1', [atc]);
+  async add(
+    userId: number,
+    atc: string,
+    notes?: string,
+  ): Promise<UserMedication> {
+    if (notes && notes.length > 1000) {
+      throw new AppError(
+        'Notes must not exceed 1000 characters',
+        'BAD_USER_INPUT',
+      );
+    }
+
+    const drug = await this.db.query('SELECT atc FROM drugs WHERE atc = $1', [
+      atc,
+    ]);
     if (!drug.length) {
       throw new AppError(`Drug with ATC code "${atc}" not found`, 'NOT_FOUND');
     }
@@ -29,13 +42,27 @@ export class UserMedicationsService {
     );
 
     if (!rows.length) {
-      throw new AppError('You already have this medication in your list', 'CONFLICT');
+      throw new AppError(
+        'You already have this medication in your list',
+        'CONFLICT',
+      );
     }
 
     return rows[0];
   }
 
-  async update(userId: number, atc: string, notes: string | null): Promise<UserMedication> {
+  async update(
+    userId: number,
+    atc: string,
+    notes: string | null,
+  ): Promise<UserMedication> {
+    if (notes && notes.length > 500) {
+      throw new AppError(
+        'Notes must not exceed 500 characters',
+        'BAD_USER_INPUT',
+      );
+    }
+
     const rows = await this.db.query<UserMedication>(
       `UPDATE user_medications
        SET notes = $3
