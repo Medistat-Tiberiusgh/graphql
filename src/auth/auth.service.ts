@@ -12,12 +12,31 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(username: string, password: string): Promise<AuthPayload> {
+  private signToken(user: {
+    id: number;
+    username: string;
+    region_id: number;
+    gender_id: number;
+    age_group_id: number;
+  }): string {
+    return this.jwtService.sign({
+      sub: user.id,
+      username: user.username,
+      regionId: user.region_id,
+      genderId: user.gender_id,
+      ageGroupId: user.age_group_id,
+    });
+  }
+
+  async register(
+    username: string,
+    password: string,
+    regionId: number,
+    genderId: number,
+    ageGroupId: number,
+  ): Promise<AuthPayload> {
     if (!username || username.trim().length === 0) {
-      throw new AppError(
-        'You forgot to provide the username',
-        'BAD_USER_INPUT',
-      );
+      throw new AppError('You forgot to provide the username', 'BAD_USER_INPUT');
     }
     if (username.length > 50) {
       throw new AppError(
@@ -26,16 +45,10 @@ export class AuthService {
       );
     }
     if (password.length < 6) {
-      throw new AppError(
-        'Password must be at least 6 characters',
-        'BAD_USER_INPUT',
-      );
+      throw new AppError('Password must be at least 6 characters', 'BAD_USER_INPUT');
     }
     if (password.length > 100) {
-      throw new AppError(
-        'Password must not exceed 100 characters',
-        'BAD_USER_INPUT',
-      );
+      throw new AppError('Password must not exceed 100 characters', 'BAD_USER_INPUT');
     }
 
     const existing = await this.usersService.findByUsername(username);
@@ -44,13 +57,9 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await this.usersService.create(username, passwordHash);
+    const user = await this.usersService.create(username, passwordHash, regionId, genderId, ageGroupId);
 
-    const token = this.jwtService.sign({
-      sub: user.id,
-      username: user.username,
-    });
-    return { token, username: user.username };
+    return { token: this.signToken(user), username: user.username };
   }
 
   async login(username: string, password: string): Promise<AuthPayload> {
@@ -64,10 +73,6 @@ export class AuthService {
       throw new AppError('Invalid credentials', 'UNAUTHENTICATED');
     }
 
-    const token = this.jwtService.sign({
-      sub: user.id,
-      username: user.username,
-    });
-    return { token, username: user.username };
+    return { token: this.signToken(user), username: user.username };
   }
 }

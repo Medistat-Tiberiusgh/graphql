@@ -1,4 +1,4 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Int, Mutation, Resolver } from '@nestjs/graphql';
 import { AuthService } from './auth.service';
 import { AuthPayload } from './auth.model';
 
@@ -10,8 +10,11 @@ export class AuthResolver {
   async register(
     @Args('username') username: string,
     @Args('password') password: string,
+    @Args('regionId', { type: () => Int }) regionId: number,
+    @Args('genderId', { type: () => Int }) genderId: number,
+    @Args('ageGroupId', { type: () => Int }) ageGroupId: number,
   ): Promise<AuthPayload> {
-    return this.authService.register(username, password);
+    return this.authService.register(username, password, regionId, genderId, ageGroupId);
   }
 
   @Mutation(() => AuthPayload)
