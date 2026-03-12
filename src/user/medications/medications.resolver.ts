@@ -1,15 +1,38 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/current-user.decorator';
 import { UserMedication } from './medication.model';
 import { UserMedicationsService } from './medications.service';
+import { InsightsService } from './insights/insights.service';
+import { Drug } from '../../drugs/drug.model';
+import { DrugInsights } from './insights/insights.model';
 
 @Resolver(() => UserMedication)
 @UseGuards(JwtAuthGuard)
 export class UserMedicationsResolver {
-  constructor(private readonly service: UserMedicationsService) {}
+  constructor(
+    private readonly service: UserMedicationsService,
+    private readonly insightsService: InsightsService,
+  ) {}
+
+  @ResolveField(() => Drug, { nullable: true })
+  drug(@Parent() med: UserMedication): Promise<Drug | undefined> {
+    return this.insightsService.getDrug(med.atc);
+  }
+
+  @ResolveField(() => DrugInsights, { nullable: true })
+  insights(@Parent() med: UserMedication): Promise<DrugInsights> {
+    return this.insightsService.getInsights(med.atc);
+  }
 
   @Query(() => [UserMedication])
   myMedications(@CurrentUser() user: JwtPayload): Promise<UserMedication[]> {
