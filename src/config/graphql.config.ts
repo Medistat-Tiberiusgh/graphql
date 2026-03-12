@@ -5,6 +5,7 @@ export const graphqlConfig: ApolloDriverConfig = {
   autoSchemaFile: true,
   playground: false,
   graphiql: true,
+  context: ({ req }) => ({ req }),
   formatError: (formatted, error) => {
     console.error(error);
     const code = formatted.extensions?.code;

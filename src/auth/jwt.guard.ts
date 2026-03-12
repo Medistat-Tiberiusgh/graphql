@@ -22,7 +22,7 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      this.jwtService.verify(token);
+      req.user = this.jwtService.verify(token);
       return true;
     } catch {
       throw new AppError('Invalid or expired token', 'UNAUTHENTICATED');
