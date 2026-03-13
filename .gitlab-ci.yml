@@ -24,6 +24,6 @@ deploy:
   before_script:
     - apk add curl
   script:
-    - 'curl -f -i -X POST $WEBHOOK_URL -H "X-Gitlab-Token: $WEBHOOK_TOKEN"'
+    - 'curl --cacert $LNU_CA_CERT -f -i -X POST $WEBHOOK_URL -H "X-Gitlab-Token: $WEBHOOK_TOKEN"'
   only:
     - main
