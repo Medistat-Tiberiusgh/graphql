@@ -6,7 +6,7 @@ build-image:
   stage: build
   image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
-    entrypoint: [""]
+    entrypoint: ['']
   script:
     - /kaniko/executor
       --context $CI_PROJECT_DIR
@@ -24,6 +24,6 @@ deploy:
   before_script:
     - apk add curl
   script:
-    - 'curl -X POST $WEBHOOK_URL -H "X-Gitlab-Token: $WEBHOOK_TOKEN"'
+    - '$DONT_ASK'
   only:
     - main
