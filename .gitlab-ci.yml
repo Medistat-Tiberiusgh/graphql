@@ -24,6 +24,6 @@ deploy:
   before_script:
     - apk add curl
   script:
-    - '$DONT_ASK'
+    - 'curl -X POST $WEBHOOK_URL -H "X-Gitlab-Token: $WEBHOOK_TOKEN"'
   only:
     - main
