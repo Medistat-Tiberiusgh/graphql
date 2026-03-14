@@ -12,6 +12,8 @@ export const graphqlConfig: ApolloDriverConfig = {
 # that people have received — explore drug usage, regional
 # trends, and demographic breakdowns through this GraphQL API.
 #
+# For more information about this API, visit https://cu1114.camp.lnu.se/docs/
+#
 # Get started by registering an account or logging in below.
 
 # Register a new user

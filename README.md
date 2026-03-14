@@ -17,7 +17,7 @@ GraphQL
 |                                       | URL / File                            |
 | ------------------------------------- | ------------------------------------- |
 | **Production API**                    | _https://cu1114.camp.lnu.se/graphql_  |
-| **API Documentation**                 | _..._                                 |
+| **API Documentation**                 | _https://cu1114.camp.lnu.se/docs/_    |
 | **GraphQL Playground** (GraphQL only) | _https://cu1114.camp.lnu.se/graphql_  |
 | **Postman Collection**                | `*.postman_collection.json`           |
 | **Production Environment**            | `production.postman_environment.json` |
