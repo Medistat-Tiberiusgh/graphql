@@ -25,7 +25,7 @@ export class StatisticsDataLoaders {
         'SELECT id AS "regionCode", name AS "regionName" FROM regions WHERE id = ANY($1)',
         [[...regionIds]],
       );
-      const map = new Map(rows.map((r) => [r.regionCode, r]));
+      const map = new Map(rows.map((r) => [String(r.regionCode), r]));
       return regionIds.map((id) => map.get(id));
     },
   );
