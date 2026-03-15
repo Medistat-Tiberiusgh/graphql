@@ -6,5 +6,5 @@ export class AgeGroup {
   id: number;
 
   @Field()
-  name: string;
+  range: string;
 }
