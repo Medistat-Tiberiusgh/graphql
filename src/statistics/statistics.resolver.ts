@@ -30,7 +30,7 @@ export class StatisticsResolver {
   }
 
   @ResolveField(() => Drug, { nullable: true })
-  async drug(@Parent() statistic: Statistic): Promise<Drug | undefined> {
+  async drugData(@Parent() statistic: Statistic): Promise<Drug | undefined> {
     return this.loaders.drugByAtcCode.load(statistic.atcCode);
   }
 

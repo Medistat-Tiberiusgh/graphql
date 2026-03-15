@@ -29,7 +29,6 @@ export class Statistic {
 
   region: number;
 
-  @Field()
   atcCode: string;
 
   gender: number;
@@ -52,7 +51,7 @@ export class Statistic {
   per1000: number;
 
   @Field(() => Drug, { nullable: true })
-  drug?: Drug;
+  drugData?: Drug;
 
   @Field(() => Region, { nullable: true })
   regionData?: Region;
