@@ -1,4 +1,5 @@
 import { Field, Float, ID, Int, ObjectType } from '@nestjs/graphql';
+import { AgeGroup } from '../age-groups/age-group.model';
 import { Drug } from '../drugs/drug.model';
 import { Gender } from '../genders/gender.model';
 import { Region } from '../regions/region.model';
@@ -36,8 +37,10 @@ export class Statistic {
   @Field(() => Gender, { nullable: true })
   genderData?: Gender;
 
-  @Field(() => Int)
   ageGroup: number;
+
+  @Field(() => AgeGroup, { nullable: true })
+  ageGroupData?: AgeGroup;
 
   @Field(() => Int)
   numberOfPrescriptions: number;

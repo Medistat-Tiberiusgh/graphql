@@ -10,6 +10,7 @@ import {
 import { Statistic, StatisticsConnection } from './statistics.model';
 import { StatisticsService } from './statistics.service';
 import { StatisticsDataLoaders } from './statistics.dataloaders';
+import { AgeGroup } from '../age-groups/age-group.model';
 import { Drug } from '../drugs/drug.model';
 import { Gender } from '../genders/gender.model';
 import { Region } from '../regions/region.model';
@@ -31,6 +32,13 @@ export class StatisticsResolver {
   @ResolveField(() => Drug, { nullable: true })
   async drug(@Parent() statistic: Statistic): Promise<Drug | undefined> {
     return this.loaders.drugByAtcCode.load(statistic.atcCode);
+  }
+
+  @ResolveField(() => AgeGroup, { nullable: true })
+  async ageGroupData(
+    @Parent() statistic: Statistic,
+  ): Promise<AgeGroup | undefined> {
+    return this.loaders.ageGroupById.load(String(statistic.ageGroup));
   }
 
   @ResolveField(() => Gender, { nullable: true })
