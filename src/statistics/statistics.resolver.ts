@@ -11,6 +11,7 @@ import { Statistic, StatisticsConnection } from './statistics.model';
 import { StatisticsService } from './statistics.service';
 import { StatisticsDataLoaders } from './statistics.dataloaders';
 import { Drug } from '../drugs/drug.model';
+import { Gender } from '../genders/gender.model';
 import { Region } from '../regions/region.model';
 
 @Resolver(() => Statistic)
@@ -30,6 +31,13 @@ export class StatisticsResolver {
   @ResolveField(() => Drug, { nullable: true })
   async drug(@Parent() statistic: Statistic): Promise<Drug | undefined> {
     return this.loaders.drugByAtcCode.load(statistic.atcCode);
+  }
+
+  @ResolveField(() => Gender, { nullable: true })
+  async genderData(
+    @Parent() statistic: Statistic,
+  ): Promise<Gender | undefined> {
+    return this.loaders.genderById.load(String(statistic.gender));
   }
 
   @ResolveField(() => Region, { nullable: true })

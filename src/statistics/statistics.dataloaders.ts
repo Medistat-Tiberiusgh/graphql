@@ -2,6 +2,7 @@ import { Injectable, Scope } from '@nestjs/common';
 import DataLoader from 'dataloader';
 import { DatabaseService } from '../database/database.service';
 import { Drug } from '../drugs/drug.model';
+import { Gender } from '../genders/gender.model';
 import { Region } from '../regions/region.model';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -16,6 +17,17 @@ export class StatisticsDataLoaders {
       );
       const map = new Map(rows.map((d) => [d.atcCode, d]));
       return atcCodes.map((code) => map.get(code));
+    },
+  );
+
+  readonly genderById = new DataLoader<string, Gender | undefined>(
+    async (genderIds: readonly string[]) => {
+      const rows = await this.db.query<Gender>(
+        'SELECT id, name FROM genders WHERE id = ANY($1::int[])',
+        [[...genderIds]],
+      );
+      const map = new Map(rows.map((g) => [String(g.id), g]));
+      return genderIds.map((id) => map.get(id));
     },
   );
 
