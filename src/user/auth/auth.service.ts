@@ -66,6 +66,9 @@ export class AuthService {
         'BAD_USER_INPUT',
       );
     }
+    if (genderId === 3) {
+      throw new AppError('Gender "Both" (id 3) cannot be used for registration', 'BAD_USER_INPUT');
+    }
     if (ageGroupId === 99) {
       throw new AppError(
         'Age group "Total" (id 99) cannot be used for registration',
