@@ -4,7 +4,6 @@ import { DrugInsights } from './insights/insights.model';
 
 @ObjectType()
 export class UserMedication {
-  @Field()
   atc: string;
 
   @Field({ nullable: true })
@@ -14,7 +13,7 @@ export class UserMedication {
   addedAt: Date;
 
   @Field(() => Drug, { nullable: true })
-  drug?: Drug;
+  drugData?: Drug;
 
   @Field(() => DrugInsights, { nullable: true })
   insights?: DrugInsights;
