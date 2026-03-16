@@ -6,7 +6,9 @@ import { AuthPayload } from './auth.model';
 export class AuthResolver {
   constructor(private readonly authService: AuthService) {}
 
-  @Mutation(() => AuthPayload)
+  @Mutation(() => AuthPayload, {
+    description: 'Valid values for regionId, genderId and ageGroupId are listed at https://cu1114.camp.lnu.se/docs/schema/reference-data',
+  })
   async register(
     @Args('username') username: string,
     @Args('password') password: string,

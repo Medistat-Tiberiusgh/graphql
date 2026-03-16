@@ -25,7 +25,7 @@ export class UserMedicationsResolver {
   ) {}
 
   @ResolveField(() => Drug, { nullable: true })
-  drug(@Parent() med: UserMedication): Promise<Drug | undefined> {
+  drugData(@Parent() med: UserMedication): Promise<Drug | undefined> {
     return this.insightsService.getDrug(med.atc);
   }
 
