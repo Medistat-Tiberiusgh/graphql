@@ -93,6 +93,14 @@ export class AuthService {
     return { token: this.signToken(user), username: user.username };
   }
 
+  async deleteAccount(userId: number, confirm: boolean): Promise<boolean> {
+    if (!confirm) {
+      throw new AppError('You must set confirm to true to delete your account', 'BAD_USER_INPUT');
+    }
+    await this.usersService.delete(userId);
+    return true;
+  }
+
   async login(username: string, password: string): Promise<AuthPayload> {
     const user = await this.usersService.findByUsername(username);
     if (!user) {
