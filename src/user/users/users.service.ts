@@ -22,6 +22,10 @@ export class UsersService {
     return rows[0];
   }
 
+  async delete(id: number): Promise<void> {
+    await this.db.query('DELETE FROM users WHERE id = $1', [id]);
+  }
+
   async create(
     username: string,
     passwordHash: string,

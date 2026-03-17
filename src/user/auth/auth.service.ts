@@ -36,7 +36,10 @@ export class AuthService {
     ageGroupId: number,
   ): Promise<AuthPayload> {
     if (!username || username.trim().length === 0) {
-      throw new AppError('You forgot to provide the username', 'BAD_USER_INPUT');
+      throw new AppError(
+        'You forgot to provide the username',
+        'BAD_USER_INPUT',
+      );
     }
     if (username.length > 50) {
       throw new AppError(
@@ -45,10 +48,32 @@ export class AuthService {
       );
     }
     if (password.length < 6) {
-      throw new AppError('Password must be at least 6 characters', 'BAD_USER_INPUT');
+      throw new AppError(
+        'Password must be at least 6 characters',
+        'BAD_USER_INPUT',
+      );
     }
     if (password.length > 100) {
-      throw new AppError('Password must not exceed 100 characters', 'BAD_USER_INPUT');
+      throw new AppError(
+        'Password must not exceed 100 characters',
+        'BAD_USER_INPUT',
+      );
+    }
+
+    if (regionId === 0) {
+      throw new AppError(
+        'Region with ID 0 ("Riket") cannot be used for registration',
+        'BAD_USER_INPUT',
+      );
+    }
+    if (genderId === 3) {
+      throw new AppError('Gender "Both" (id 3) cannot be used for registration', 'BAD_USER_INPUT');
+    }
+    if (ageGroupId === 99) {
+      throw new AppError(
+        'Age group "Total" (id 99) cannot be used for registration',
+        'BAD_USER_INPUT',
+      );
     }
 
     const existing = await this.usersService.findByUsername(username);
@@ -57,9 +82,23 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await this.usersService.create(username, passwordHash, regionId, genderId, ageGroupId);
+    const user = await this.usersService.create(
+      username,
+      passwordHash,
+      regionId,
+      genderId,
+      ageGroupId,
+    );
 
     return { token: this.signToken(user), username: user.username };
+  }
+
+  async deleteAccount(userId: number, confirm: boolean): Promise<boolean> {
+    if (!confirm) {
+      throw new AppError('You must set confirm to true to delete your account', 'BAD_USER_INPUT');
+    }
+    await this.usersService.delete(userId);
+    return true;
   }
 
   async login(username: string, password: string): Promise<AuthPayload> {
