@@ -97,7 +97,10 @@ export class AuthService {
     if (!confirm) {
       throw new AppError('You must set confirm to true to delete your account', 'BAD_USER_INPUT');
     }
-    await this.usersService.delete(userId);
+    const deleted = await this.usersService.delete(userId);
+    if (!deleted) {
+      throw new AppError('User not found', 'NOT_FOUND');
+    }
     return true;
   }
 
