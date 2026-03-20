@@ -48,10 +48,7 @@ export class AuthService {
       );
     }
     if (password.length < 6) {
-      throw new AppError(
-        'Password must be at least 6 characters',
-        'BAD_USER_INPUT',
-      );
+      throw new AppError('Password must be at least 6 characters', 'BANANA');
     }
     if (password.length > 100) {
       throw new AppError(
