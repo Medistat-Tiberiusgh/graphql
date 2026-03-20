@@ -36,8 +36,9 @@ smoke-test:
   before_script:
     - npm install -g @usebruno/cli
   script:
-    - echo "Waiting 30s for container to start up..."
-    - sleep 30
+    - echo "Waiting 5s for container to start up..."
+    # LNU's runners take their time so no need for long wait time here
+    - sleep 5
     - cd tests && NODE_EXTRA_CA_CERTS=$LNU_CA_CERT bru run --env-var baseUrl=https://cu1114.camp.lnu.se --sandbox=developer
   only:
     - main
