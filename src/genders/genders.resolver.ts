@@ -11,10 +11,10 @@ export class GendersResolver {
     return this.gendersService.findAll();
   }
 
-  @Query(() => Gender, { nullable: true })
+  @Query(() => Gender)
   async gender(
     @Args('id', { type: () => Int }) id: number,
-  ): Promise<Gender | undefined> {
+  ): Promise<Gender> {
     return this.gendersService.findOne(id);
   }
 }

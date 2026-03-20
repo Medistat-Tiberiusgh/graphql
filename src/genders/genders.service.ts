@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { Gender } from './gender.model';
+import { AppError } from '../common/app-error';
 
 @Injectable()
 export class GendersService {
@@ -11,9 +12,12 @@ export class GendersService {
     return this.db.query<Gender>(sql);
   }
 
-  async findOne(id: number): Promise<Gender | undefined> {
+  async findOne(id: number): Promise<Gender> {
     const sql = 'SELECT id, name FROM genders WHERE id = $1';
     const rows = await this.db.query<Gender>(sql, [id]);
+    if (!rows.length) {
+      throw new AppError(`Gender with id ${id} not found`, 'NOT_FOUND');
+    }
     return rows[0];
   }
 }

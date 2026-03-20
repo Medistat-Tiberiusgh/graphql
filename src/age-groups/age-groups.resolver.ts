@@ -11,10 +11,10 @@ export class AgeGroupsResolver {
     return this.ageGroupsService.findAll();
   }
 
-  @Query(() => AgeGroup, { nullable: true })
+  @Query(() => AgeGroup)
   async ageGroup(
     @Args('id', { type: () => Int }) id: number,
-  ): Promise<AgeGroup | undefined> {
+  ): Promise<AgeGroup> {
     return this.ageGroupsService.findOne(id);
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { Region } from './region.model';
+import { AppError } from '../common/app-error';
 
 @Injectable()
 export class RegionsService {
@@ -11,11 +12,17 @@ export class RegionsService {
     return this.db.query<Region>(sql);
   }
 
-  async findOne(regionCode: string): Promise<Region | undefined> {
+  async findOne(regionCode: string): Promise<Region> {
+    const id = parseInt(regionCode, 10);
+    if (isNaN(id)) {
+      throw new AppError(`Region ${regionCode} not found`, 'NOT_FOUND');
+    }
     const sql =
       'SELECT id AS "regionCode", name AS "regionName" FROM regions WHERE id = $1';
-    const params = [regionCode];
-    const rows = await this.db.query<Region>(sql, params);
+    const rows = await this.db.query<Region>(sql, [id]);
+    if (!rows.length) {
+      throw new AppError(`Region ${regionCode} not found`, 'NOT_FOUND');
+    }
     return rows[0];
   }
 }

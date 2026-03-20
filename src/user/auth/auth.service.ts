@@ -67,7 +67,10 @@ export class AuthService {
       );
     }
     if (genderId === 3) {
-      throw new AppError('Gender "Both" (id 3) cannot be used for registration', 'BAD_USER_INPUT');
+      throw new AppError(
+        'Gender "Both" (id 3) cannot be used for registration',
+        'BAD_USER_INPUT',
+      );
     }
     if (ageGroupId === 99) {
       throw new AppError(
@@ -95,7 +98,10 @@ export class AuthService {
 
   async deleteAccount(userId: number, confirm: boolean): Promise<boolean> {
     if (!confirm) {
-      throw new AppError('You must set confirm to true to delete your account', 'BAD_USER_INPUT');
+      throw new AppError(
+        'You must set confirm to true to delete your account',
+        'BAD_USER_INPUT',
+      );
     }
     const deleted = await this.usersService.delete(userId);
     if (!deleted) {
