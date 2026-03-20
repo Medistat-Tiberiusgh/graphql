@@ -14,15 +14,12 @@ GraphQL
 
 ## Links and Testing
 
-|                                       | URL / File                           |
-| ------------------------------------- | ------------------------------------ |
-| **Production API**                    | _https://cu1114.camp.lnu.se/graphql_ |
-| **API Documentation**                 | _https://cu1114.camp.lnu.se/docs/_   |
-| **GraphQL Playground** (GraphQL only) | _https://cu1114.camp.lnu.se/graphql_ |
-| **Bruno Collection**                  | `tests/`                             |
-| **Bruno Environment**                 | `tests/environments/Dev.bru`         |
-
-> For full documentation on the test suite, API schema, and infrastructure, see **https://cu1114.camp.lnu.se/docs/**
+|                                 | URL / File                           |
+| ------------------------------- | ------------------------------------ |
+| **Production API & Playground** | _https://cu1114.camp.lnu.se/graphql_ |
+| **API Documentation**           | _https://cu1114.camp.lnu.se/docs/_   |
+| **Bruno (test) Collection**     | `tests/`                             |
+| **Bruno Environment**           | `tests/environments/Dev.bru`         |
 
 **Examiner can verify tests in one of the following ways:**
 
@@ -70,7 +67,20 @@ Worth mentioneing i believe is the fact that authentication and authorization ar
 **GraphQL students:**
 
 - _How did you design your schema (types, queries, mutations)?_
+
+Through NestJS, the graphql schema is designed through decoraters, keeping implementation and schema in sync by definition.
+
+**Types** Evolved throughout the development of the API. In places where it became obvious that the returned type is a datastructure, the API was changed in order to reflect the data structure type. A neat feature that i discovered throughout the development of the types is that one can add descriptions to them. Descriptions have been used for informing the API consumer about details that would be hard to understand (as for example a deliberate wrapper type `DrugInsights` so future insight dimensions can be added without a breaking change).
+
+**Queries** are split by resource. Reference data is publicly accessible. `myMedications` requires a valid JWT and returns only the authenticated user's data.
+
+**Mutations** are grouped into auth (`register`, `login`, `deleteAccount`) and medications (`addMedication`, `updateMedication`, `removeMedication`). All medication mutations and `deleteAccount` are protected by the JWT guard. `deleteAccount` requires an explicit `confirm: true` argument to prevent accidental deletion.
+
 - _How did you implement nested queries? How does the single-endpoint approach affect your design?_
+
+Nested queries are implemented via `@ResolveField` on the `UserMedicationsResolver`. When a client requests `myMedications`, the resolver returns the base `UserMedication` rows. If the client also requests `drugData` or `insights`, NestJS automatically calls the corresponding `@ResolveField` method for each medication, fetching the drug catalog entry or regional statistics lazily. If the client omits those fields, the resolvers are never called.
+
+The single-endpoint model shaped the design in two concrete ways. First, the `DrugInsights` wrapper type exists because the single endpoint invites clients to ask for more over time — wrapping `regionalPopularity` in a type means future dimensions (trends, demographics) can be added as new fields without a breaking change. Second, authorization had to move into the resolver layer rather than the URL layer. Since everything goes through `/graphql`, field-level guards (`@UseGuards(JwtAuthGuard)`) on the resolver class replace what would otherwise be route-level middleware in a REST API.
 
 ### Error Handling
 

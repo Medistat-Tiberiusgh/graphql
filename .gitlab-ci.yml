@@ -1,6 +1,8 @@
 stages:
   - build
   - deploy
+  - test
+  - rollback
 
 build-image:
   stage: build
@@ -25,5 +27,31 @@ deploy:
     - apk add curl
   script:
     - 'curl --cacert $LNU_CA_CERT -f -X POST $WEBHOOK_URL -H "X-Gitlab-Token: $WEBHOOK_TOKEN"'
+  only:
+    - main
+
+smoke-test:
+  stage: test
+  image: node:22-alpine
+  before_script:
+    - npm install -g @usebruno/cli
+  script:
+    - echo "Waiting 5s for container to start up..."
+    # LNU's runners take their time so no need for long wait time here
+    - sleep 5
+    - cd tests && NODE_EXTRA_CA_CERTS=$LNU_CA_CERT bru run --env-var baseUrl=https://cu1114.camp.lnu.se --sandbox=developer
+  only:
+    - main
+
+rollback:
+  stage: rollback
+  image: alpine
+  needs:
+    - job: smoke-test
+  before_script:
+    - apk add curl
+  script:
+    - 'curl --cacert $LNU_CA_CERT -f -X POST $ROLLBACK_WEBHOOK_URL -H "X-Gitlab-Token: $WEBHOOK_TOKEN"'
+  when: on_failure
   only:
     - main

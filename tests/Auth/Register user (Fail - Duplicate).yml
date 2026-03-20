@@ -28,8 +28,8 @@ graphql:
       }
     variables: |-
       {
-        "user": "{{currentUsername}}",
-        "pass": "{{currentPassword}}",
+        "user": "{{testUsername}}",
+        "pass": "{{testPassword}}",
         "reg": 1,
         "gen": 1,
         "age": 1
