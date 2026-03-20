@@ -38,13 +38,15 @@ smoke-test:
   script:
     - echo "Waiting 30s for container to start up..."
     - sleep 30
-    - bru run tests/ --env-var baseUrl=https://cu1114.camp.lnu.se --sandbox=developer
+    - cd tests && bru run --env-var baseUrl=https://cu1114.camp.lnu.se --sandbox=developer
   only:
     - main
 
 rollback:
   stage: rollback
   image: alpine
+  needs:
+    - job: smoke-test
   before_script:
     - apk add curl
   script:
