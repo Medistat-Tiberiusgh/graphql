@@ -1,0 +1,69 @@
+info:
+  name: Fetch
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: '{{baseUrl}}/graphql'
+  body:
+    query: |
+      query GetStatistics {
+        statistics {
+          items {
+            id
+            year
+            numberOfPrescriptions
+            numberOfPatients
+            per1000
+            drugData {
+              atcCode
+              name
+            }
+            regionData {
+              regionCode
+              regionName
+            }
+          }
+          totalCount
+          hasNextPage
+          hasPreviousPage
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Get statistics succeeds", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.statistics.items).to.be.an("array");
+            expect(body.data.statistics.items.length).to.be.above(0);
+        });
+
+        test("Statistics connection has correct structure", () => {
+            expect(body.data.statistics).to.have.property("totalCount");
+            expect(body.data.statistics).to.have.property("hasNextPage");
+            expect(body.data.statistics).to.have.property("hasPreviousPage");
+        });
+
+        test("Statistic item has correct structure", () => {
+            const item = body.data.statistics.items[0];
+            expect(item).to.have.property("id");
+            expect(item).to.have.property("year");
+            expect(item).to.have.property("numberOfPrescriptions");
+            expect(item).to.have.property("per1000");
+        });
+
+        // Store an id for the single statistic test
+        const firstId = body.data.statistics.items[0].id;
+        bru.setVar("testStatisticId", firstId);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

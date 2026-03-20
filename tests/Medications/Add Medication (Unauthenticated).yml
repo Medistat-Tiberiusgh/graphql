@@ -1,0 +1,43 @@
+info:
+  name: Add Medication (Unauthenticated)
+  type: graphql
+  seq: 5
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |
+      mutation AddMedication($atc: String!, $notes: String) {
+        addMedication(atc: $atc, notes: $notes) {
+          addedAt
+          notes
+          drugData {
+            atcCode
+            name
+          }
+        }
+      }
+    variables: |-
+      {
+        "atc": "N02BE01",
+        "notes": "Test note"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Add medication without token fails", () => {
+            expect(body.errors).to.not.be.undefined;
+            expect(body.errors[0].extensions.code).to.equal("UNAUTHENTICATED");
+            expect(body.data).to.be.null;
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

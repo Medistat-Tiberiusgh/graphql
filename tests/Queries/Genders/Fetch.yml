@@ -1,0 +1,41 @@
+info:
+  name: Fetch
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |
+      query GetGenders {
+        genders {
+          id
+          name
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Get all genders succeeds", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.genders).to.be.an("array");
+            expect(body.data.genders.length).to.be.above(0);
+        });
+
+        test("Genders have correct structure", () => {
+            const gender = body.data.genders[0];
+            expect(gender).to.have.property("id");
+            expect(gender).to.have.property("name");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

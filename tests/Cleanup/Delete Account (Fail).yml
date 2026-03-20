@@ -1,0 +1,38 @@
+info:
+  name: Delete Account (Fail)
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: '{{baseUrl}}/graphql'
+  body:
+    query: |
+      mutation TerminateUser($confirm: Boolean!) {
+        deleteAccount(confirm: $confirm)
+      }
+    variables: |-
+      {
+        "confirm": true
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Delete with expired token fails", () => {
+            expect(body.errors).to.not.be.undefined;
+            expect(body.errors[0].extensions.code).to.equal("NOT_FOUND");
+            expect(body.data).to.be.null;
+        });
+
+        bru.setVar("jwtToken", "");
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

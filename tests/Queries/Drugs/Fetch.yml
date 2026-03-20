@@ -1,0 +1,42 @@
+info:
+  name: Fetch
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |
+      query GetDrugs {
+        drugs {
+          atcCode
+          name
+          narcoticClass
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Get all drugs succeeds", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.drugs).to.be.an("array");
+            expect(body.data.drugs.length).to.be.above(0);
+        });
+
+        test("Drugs have correct structure", () => {
+            const drug = body.data.drugs[0];
+            expect(drug).to.have.property("atcCode");
+            expect(drug).to.have.property("name");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

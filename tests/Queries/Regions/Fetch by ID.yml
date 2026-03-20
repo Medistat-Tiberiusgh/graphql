@@ -1,0 +1,43 @@
+info:
+  name: Fetch by ID
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |
+      query GetRegion($regionCode: String!) {
+        region(regionCode: $regionCode) {
+          regionCode
+          regionName
+        }
+      }
+    variables: |-
+      {
+        "regionCode": "8"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Get region by code succeeds", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.region).to.not.be.null;
+        });
+
+        test("Region has correct data", () => {
+            expect(body.data.region.regionCode).to.equal("8");
+            expect(body.data.region.regionName).to.equal("Kalmar län");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

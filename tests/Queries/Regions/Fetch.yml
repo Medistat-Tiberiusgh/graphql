@@ -1,0 +1,48 @@
+info:
+  name: Fetch
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |-
+      query GetRegions {
+          regions {
+              regionCode
+              regionName
+          }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Get all regions succeeds", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.regions).to.be.an("array");
+            expect(body.data.regions.length).to.be.above(0);
+        });
+
+        test("Regions have correct structure", () => {
+            const region = body.data.regions[0];
+            expect(region).to.have.property("regionCode");
+            expect(region).to.have.property("regionName");
+            expect(region.regionCode).to.be.a("string");
+            expect(region.regionName).to.be.a("string");
+        });
+
+        test("Regions contain known region", () => {
+            const kalmar = body.data.regions.find(r => r.regionCode === "8");
+            expect(kalmar.regionName).to.equal("Kalmar län");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

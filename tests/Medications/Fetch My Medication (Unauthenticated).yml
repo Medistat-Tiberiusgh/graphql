@@ -1,0 +1,45 @@
+info:
+  name: Fetch My Medication (Unauthenticated)
+  type: graphql
+  seq: 6
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |
+      query GetMyMedications {
+        myMedications {
+          notes
+          addedAt
+          drugData {
+            atcCode
+            name
+          }
+          insights {
+            regionalPopularity {
+              regionId
+              regionName
+              per1000
+            }
+          }
+        }
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Get my medications without token fails", () => {
+            expect(body.errors).to.not.be.undefined;
+            expect(body.errors[0].extensions.code).to.equal("UNAUTHENTICATED");
+            expect(body.data).to.be.null;
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,45 @@
+info:
+  name: Fetch by ATC
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |
+      query GetDrug($atcCode: String!) {
+        drug(atcCode: $atcCode) {
+          atcCode
+          name
+          narcoticClass
+        }
+      }
+    variables: |-
+      {
+        "atcCode": "N02BE01"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Get drug by ATC code succeeds", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.drug).to.not.be.null;
+        });
+
+        test("Drug has correct data", () => {
+            expect(body.data.drug.atcCode).to.equal("N02BE01");
+            expect(body.data.drug.name).to.equal("Paracetamol");
+            expect(body.data.drug.narcoticClass).to.be.null;
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

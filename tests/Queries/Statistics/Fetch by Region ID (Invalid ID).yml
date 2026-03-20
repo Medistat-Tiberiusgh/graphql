@@ -1,0 +1,45 @@
+info:
+  name: Fetch by Region ID (Invalid ID)
+  type: graphql
+  seq: 3
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |
+      query GetStatisticsByRegion($region: Int) {
+        statistics(region: $region) {
+          items {
+            id
+            regionData {
+              regionCode
+              regionName
+            }
+          }
+          totalCount
+        }
+      }
+    variables: |-
+      {
+          "region": 999999
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Get statistics with invalid region returns empty list", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.statistics.items).to.be.an("array");
+            expect(body.data.statistics.items.length).to.equal(0);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

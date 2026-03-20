@@ -1,0 +1,35 @@
+info:
+  name: Remove Medication (Success)
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |
+      mutation RemoveMedication($atc: String!) {
+        removeMedication(atc: $atc)
+      }
+    variables: |-
+      {
+        "atc": "{{testAtcCode}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Remove medication succeeds", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.removeMedication).to.equal("N02BE01");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
