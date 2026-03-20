@@ -1,0 +1,39 @@
+info:
+  name: Delete Account
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |
+      mutation TerminateUser($confirm: Boolean!) {
+        deleteAccount(confirm: $confirm)
+      }
+    variables: |-
+      {
+        "confirm": true
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Account should be deleted successfully", function() {
+          // Check that the mutation returned true
+          expect(body.data.deleteAccount).to.equal(true);
+          expect(body.errors).to.be.undefined;
+        });
+
+        // Optional: Clear the token from the environment now that it's invalid
+        // bru.setEnvVar("jwtToken", "");
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

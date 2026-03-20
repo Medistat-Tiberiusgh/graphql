@@ -14,21 +14,25 @@ GraphQL
 
 ## Links and Testing
 
-|                                       | URL / File                            |
-| ------------------------------------- | ------------------------------------- |
-| **Production API**                    | _https://cu1114.camp.lnu.se/graphql_  |
-| **API Documentation**                 | _https://cu1114.camp.lnu.se/docs/_    |
-| **GraphQL Playground** (GraphQL only) | _https://cu1114.camp.lnu.se/graphql_  |
-| **Postman Collection**                | `*.postman_collection.json`           |
-| **Production Environment**            | `production.postman_environment.json` |
+|                                       | URL / File                           |
+| ------------------------------------- | ------------------------------------ |
+| **Production API**                    | _https://cu1114.camp.lnu.se/graphql_ |
+| **API Documentation**                 | _https://cu1114.camp.lnu.se/docs/_   |
+| **GraphQL Playground** (GraphQL only) | _https://cu1114.camp.lnu.se/graphql_ |
+| **Bruno Collection**                  | `tests/`                             |
+| **Bruno Environment**                 | `tests/environments/Dev.bru`         |
+
+> For full documentation on the test suite, API schema, and infrastructure, see **https://cu1114.camp.lnu.se/docs/**
 
 **Examiner can verify tests in one of the following ways:**
 
 1. **CI/CD pipeline** — check the pipeline output in GitLab for test results.
-2. **Run manually** — no setup needed:
+2. **Run manually** — requires [Bruno CLI](https://docs.usebruno.com/bru-cli/overview):
+   ```bash
+   npm install -g @usebruno/cli
+   bru run tests/ --env-file tests/environments/Dev.bru --sandbox=developer
    ```
-   npx newman run <collection.json> -e production.postman_environment.json
-   ```
+   Make sure the API is running locally before executing.
 
 ## Dataset
 
@@ -99,7 +103,7 @@ A global error formatter is implemented as well as a catch-all. If an error is n
 
 **GitLab CI/CD** — On every push to main, the pipeline builds a Docker image with Kaniko, pushes it to the GitLab Container Registry tagged with the commit SHA and latest, then sends a webhook to the server to pull and restart the updated container.
 
-**Testing** — XXXX
+**Tests** — API tests are written as a Bruno collection (`tests/`) and run via the Bruno CLI. Bruno was chosen over Postman because Postman does not support exporting GraphQL collections as plain files, which makes version control and CI integration impractical. The collection covers auth, medications, all reference data queries, and a cleanup step that deletes the test user after each run, making the suite safe to run against the production API.
 
 ## Reflection
 

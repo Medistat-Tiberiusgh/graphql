@@ -1,0 +1,53 @@
+info:
+  name: Add Medication (Success)
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: '{{baseUrl}}/graphql'
+  body:
+    query: |
+      mutation AddMedication($atc: String!, $notes: String) {
+        addMedication(atc: $atc, notes: $notes) {
+          addedAt
+          notes
+          drugData {
+            atcCode
+            name
+          }
+        }
+      }
+    variables: |-
+      {
+        "atc": "N02BE01",
+        "notes": "Test note"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        if (body.data && body.data.addMedication) {
+            bru.setVar("testAtcCode", "N02BE01");
+        }
+
+        test("Add medication succeeds", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.addMedication).to.have.property("addedAt");
+            expect(body.data.addMedication.notes).to.equal("Test note");
+        });
+
+        test("Added medication has correct drug data", () => {
+            expect(body.data.addMedication.drugData.atcCode).to.equal("N02BE01");
+            expect(body.data.addMedication.drugData.name).to.equal("Paracetamol");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

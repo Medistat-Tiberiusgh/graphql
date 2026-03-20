@@ -1,0 +1,50 @@
+info:
+  name: Fetch by Region ID
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |-
+      query GetStatisticsByRegion($region: Int) {
+          statistics(region: $region) {
+              items {
+                  id
+                  regionData {
+                      regionCode
+                      regionName
+                  }
+              }
+              totalCount
+          }
+      }
+    variables: |-
+      {
+          "region": 8
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Get statistics filtered by region succeeds", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.statistics.items).to.be.an("array");
+            expect(body.data.statistics.items.length).to.be.above(0);
+        });
+
+        test("Filtered statistics belong to correct region", () => {
+            const item = body.data.statistics.items[0];
+            expect(item.regionData.regionCode).to.equal("8");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

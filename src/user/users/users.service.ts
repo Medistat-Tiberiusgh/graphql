@@ -22,8 +22,9 @@ export class UsersService {
     return rows[0];
   }
 
-  async delete(id: number): Promise<void> {
-    await this.db.query('DELETE FROM users WHERE id = $1', [id]);
+  async delete(id: number): Promise<boolean> {
+    const rows = await this.db.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+    return rows.length > 0;
   }
 
   async create(

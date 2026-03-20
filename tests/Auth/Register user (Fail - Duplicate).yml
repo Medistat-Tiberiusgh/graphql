@@ -1,0 +1,55 @@
+info:
+  name: Register user (Fail - Duplicate)
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |
+      mutation RegisterDuplicate(
+        $user: String!
+        $pass: String!
+        $reg: Int!
+        $gen: Int!
+        $age: Int!
+      ) {
+        register(
+          username: $user
+          password: $pass
+          regionId: $reg
+          genderId: $gen
+          ageGroupId: $age
+        ) {
+          token
+          username
+        }
+      }
+    variables: |-
+      {
+        "user": "{{currentUsername}}",
+        "pass": "{{currentPassword}}",
+        "reg": 1,
+        "gen": 1,
+        "age": 1
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const json = res.getBody();
+
+        test("Duplicate register fails with CONFLICT", () => {
+            expect(json.errors).to.be.an("array");
+            expect(json.errors[0].extensions.code).to.equal("CONFLICT");
+            expect(json.data).to.be.null;
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

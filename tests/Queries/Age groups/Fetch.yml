@@ -1,0 +1,41 @@
+info:
+  name: Fetch
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |
+      query GetAgeGroups {
+        ageGroups {
+          id
+          range
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Get all age groups succeeds", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.ageGroups).to.be.an("array");
+            expect(body.data.ageGroups.length).to.be.above(0);
+        });
+
+        test("Age groups have correct structure", () => {
+            const ageGroup = body.data.ageGroups[0];
+            expect(ageGroup).to.have.property("id");
+            expect(ageGroup).to.have.property("range");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

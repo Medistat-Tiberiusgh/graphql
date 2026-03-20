@@ -11,8 +11,8 @@ export class DrugsResolver {
     return this.drugsService.findAll();
   }
 
-  @Query(() => Drug, { nullable: true })
-  async drug(@Args('atcCode') atcCode: string): Promise<Drug | undefined> {
+  @Query(() => Drug)
+  async drug(@Args('atcCode') atcCode: string): Promise<Drug> {
     return this.drugsService.findOne(atcCode);
   }
 }

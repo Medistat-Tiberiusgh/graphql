@@ -1,0 +1,44 @@
+info:
+  name: Uppdate Medication (Success)
+  type: graphql
+  seq: 2
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |
+      mutation UpdateMedication($atc: String!, $notes: String) {
+        updateMedication(atc: $atc, notes: $notes) {
+          notes
+          drugData {
+            atcCode
+            name
+          }
+        }
+      }
+    variables: |-
+      {
+        "atc": "{{testAtcCode}}",
+        "notes": "Updated test note"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Update medication succeeds", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.updateMedication.notes).to.equal("Updated test note");
+            expect(body.data.updateMedication.drugData.atcCode).to.equal("N02BE01");
+            expect(body.data.updateMedication.drugData.name).to.equal("Paracetamol");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,7 @@
+info:
+  name: Age groups
+  type: folder
+  seq: 3
+
+request:
+  auth: inherit
