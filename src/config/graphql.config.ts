@@ -34,6 +34,9 @@ export const graphqlConfig: ApolloDriverConfig = {
     if (code && code !== 'INTERNAL_SERVER_ERROR') {
       return { message: formatted.message, extensions: { code } };
     }
-    return { message: 'Internal server error. If you suspect this is caused by a misconfiguration, please report it to tiberius.gherac@gmail.com' };
+    return {
+      message:
+        'Internal server error. If you suspect this is caused by a misconfiguration, please report it to tiberius.gherac@gmail.com',
+    };
   },
 };

@@ -18,7 +18,10 @@ export class DrugsService {
       'SELECT atc AS "atcCode", name, narcotic_class AS "narcoticClass" FROM drugs WHERE atc = $1';
     const rows = await this.db.query<Drug>(sql, [atcCode]);
     if (!rows.length) {
-      throw new AppError(`Drug with ATC code ${atcCode} not found`, 'NOT_FOUND');
+      throw new AppError(
+        `Drug with ATC code ${atcCode} not found`,
+        'NOT_FOUND',
+      );
     }
     return rows[0];
   }

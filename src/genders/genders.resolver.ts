@@ -12,9 +12,7 @@ export class GendersResolver {
   }
 
   @Query(() => Gender)
-  async gender(
-    @Args('id', { type: () => Int }) id: number,
-  ): Promise<Gender> {
+  async gender(@Args('id', { type: () => Int }) id: number): Promise<Gender> {
     return this.gendersService.findOne(id);
   }
 }
