@@ -56,9 +56,9 @@ export class UserMedicationsService {
     atc: string,
     notes: string | null,
   ): Promise<UserMedication> {
-    if (notes && notes.length > 500) {
+    if (notes && notes.length > 1000) {
       throw new AppError(
-        'Notes must not exceed 500 characters',
+        'Notes must not exceed 1000 characters',
         'BAD_USER_INPUT',
       );
     }
