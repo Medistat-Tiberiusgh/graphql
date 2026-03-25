@@ -14,6 +14,7 @@ import { AgeGroup } from '../age-groups/age-group.model';
 import { Drug } from '../drugs/drug.model';
 import { Gender } from '../genders/gender.model';
 import { Region } from '../regions/region.model';
+import { AppError } from '../common/app-error';
 
 @Resolver(() => Statistic)
 export class StatisticsResolver {
@@ -78,6 +79,9 @@ export class StatisticsResolver {
   async statistic(
     @Args('id', { type: () => ID }) id: string,
   ): Promise<Statistic | undefined> {
+    // 100 is a generous upper bound — a valid encoded ID is ~32 chars
+    if (id.length > 100)
+      throw new AppError('Invalid ID', 'BAD_USER_INPUT');
     const [year, region, atcCode, gender, ageGroup] = Buffer.from(id, 'base64')
       .toString()
       .split(':');

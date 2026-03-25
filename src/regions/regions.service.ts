@@ -13,6 +13,9 @@ export class RegionsService {
   }
 
   async findOne(regionCode: string): Promise<Region> {
+    if (regionCode.length > 2) {
+      throw new AppError(`Region ${regionCode} not found`, 'NOT_FOUND');
+    }
     const id = parseInt(regionCode, 10);
     if (isNaN(id)) {
       throw new AppError(`Region ${regionCode} not found`, 'NOT_FOUND');

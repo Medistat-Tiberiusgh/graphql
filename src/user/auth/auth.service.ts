@@ -28,13 +28,7 @@ export class AuthService {
     });
   }
 
-  async register(
-    username: string,
-    password: string,
-    regionId: number,
-    genderId: number,
-    ageGroupId: number,
-  ): Promise<AuthPayload> {
+  private validateUsername(username: string): void {
     if (!username || username.trim().length === 0) {
       throw new AppError(
         'You forgot to provide the username',
@@ -47,6 +41,9 @@ export class AuthService {
         'BAD_USER_INPUT',
       );
     }
+  }
+
+  private validatePassword(password: string): void {
     if (password.length < 6) {
       throw new AppError(
         'Password must be at least 6 characters',
@@ -59,6 +56,17 @@ export class AuthService {
         'BAD_USER_INPUT',
       );
     }
+  }
+
+  async register(
+    username: string,
+    password: string,
+    regionId: number,
+    genderId: number,
+    ageGroupId: number,
+  ): Promise<AuthPayload> {
+    this.validateUsername(username);
+    this.validatePassword(password);
 
     if (regionId === 0) {
       throw new AppError(
@@ -111,6 +119,9 @@ export class AuthService {
   }
 
   async login(username: string, password: string): Promise<AuthPayload> {
+    this.validateUsername(username);
+    this.validatePassword(password);
+
     const user = await this.usersService.findByUsername(username);
     if (!user) {
       throw new AppError('Invalid credentials', 'UNAUTHENTICATED');

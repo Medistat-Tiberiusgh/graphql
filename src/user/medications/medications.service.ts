@@ -14,17 +14,28 @@ export class UserMedicationsService {
     );
   }
 
-  async add(
-    userId: number,
-    atc: string,
-    notes?: string,
-  ): Promise<UserMedication> {
+  private validateAtc(atc: string): void {
+    if (!atc || atc.length > 10) {
+      throw new AppError('Invalid ATC code', 'BAD_USER_INPUT');
+    }
+  }
+
+  private validateNotes(notes?: string | null): void {
     if (notes && notes.length > 1000) {
       throw new AppError(
         'Notes must not exceed 1000 characters',
         'BAD_USER_INPUT',
       );
     }
+  }
+
+  async add(
+    userId: number,
+    atc: string,
+    notes?: string,
+  ): Promise<UserMedication> {
+    this.validateAtc(atc);
+    this.validateNotes(notes);
 
     const drug = await this.db.query('SELECT atc FROM drugs WHERE atc = $1', [
       atc,
@@ -56,12 +67,8 @@ export class UserMedicationsService {
     atc: string,
     notes: string | null,
   ): Promise<UserMedication> {
-    if (notes && notes.length > 1000) {
-      throw new AppError(
-        'Notes must not exceed 1000 characters',
-        'BAD_USER_INPUT',
-      );
-    }
+    this.validateAtc(atc);
+    this.validateNotes(notes);
 
     const rows = await this.db.query<UserMedication>(
       `UPDATE user_medications
@@ -79,6 +86,8 @@ export class UserMedicationsService {
   }
 
   async remove(userId: number, atc: string): Promise<string> {
+    this.validateAtc(atc);
+
     const rows = await this.db.query(
       'DELETE FROM user_medications WHERE user_id = $1 AND atc = $2 RETURNING atc',
       [userId, atc],

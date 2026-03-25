@@ -7,6 +7,12 @@ import { AppError } from '../common/app-error';
 export class DrugsService {
   constructor(private readonly db: DatabaseService) {}
 
+  private validateAtcCode(atcCode: string): void {
+    if (!atcCode || atcCode.length > 10) {
+      throw new AppError('Invalid ATC code', 'BAD_USER_INPUT');
+    }
+  }
+
   async findAll(): Promise<Drug[]> {
     const sql =
       'SELECT atc AS "atcCode", name, narcotic_class AS "narcoticClass" FROM drugs';
@@ -14,6 +20,7 @@ export class DrugsService {
   }
 
   async findOne(atcCode: string): Promise<Drug> {
+    this.validateAtcCode(atcCode);
     const sql =
       'SELECT atc AS "atcCode", name, narcotic_class AS "narcoticClass" FROM drugs WHERE atc = $1';
     const rows = await this.db.query<Drug>(sql, [atcCode]);

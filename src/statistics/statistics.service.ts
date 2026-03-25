@@ -14,6 +14,12 @@ const SELECT = `
 export class StatisticsService {
   constructor(private readonly db: DatabaseService) {}
 
+  private validateAtcCode(atcCode: string): void {
+    if (!atcCode || atcCode.length > 10) {
+      throw new AppError('Invalid ATC code', 'BAD_USER_INPUT');
+    }
+  }
+
   async findAll(
     limit: number,
     offset: number,
@@ -27,6 +33,7 @@ export class StatisticsService {
   ): Promise<StatisticsConnection> {
     if (limit > 500)
       throw new AppError('limit must not exceed 500', 'BAD_USER_INPUT');
+    if (filters.atcCode !== undefined) this.validateAtcCode(filters.atcCode);
     const safeLimit = limit;
 
     // Build WHERE clause dynamically from whichever filters were provided
