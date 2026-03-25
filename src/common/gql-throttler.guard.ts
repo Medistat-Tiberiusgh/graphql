@@ -6,7 +6,7 @@ import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 export class GqlThrottlerGuard extends ThrottlerGuard {
   getRequestResponse(context: ExecutionContext) {
     const ctx = GqlExecutionContext.create(context);
-    const { req, res } = ctx.getContext();
+    const { req, res } = ctx.getContext<{ req: Request; res: Response }>();
     return { req, res };
   }
 }

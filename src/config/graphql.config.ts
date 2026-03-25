@@ -27,7 +27,7 @@ export const graphqlConfig: ApolloDriverConfig = {
   },
   playground: false,
   graphiql: true,
-  context: ({ req }) => ({ req }),
+  context: ({ req, res }) => ({ req, res }),
   formatError: (formatted, error) => {
     console.error(error);
     const code = formatted.extensions?.code;
