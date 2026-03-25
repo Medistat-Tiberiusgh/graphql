@@ -1,8 +1,9 @@
 import { Args, Int, Mutation, Resolver } from '@nestjs/graphql';
-import { UseGuards } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common'; // used by JwtAuthGuard on deleteAccount
 import { AuthService } from './auth.service';
 import { AuthPayload } from './auth.model';
 import { JwtAuthGuard } from './jwt.guard';
+import { AuthRateLimit } from '../../common/gql-throttler.guard';
 import { CurrentUser } from './current-user.decorator';
 import type { JwtPayload } from './current-user.decorator';
 
@@ -10,6 +11,7 @@ import type { JwtPayload } from './current-user.decorator';
 export class AuthResolver {
   constructor(private readonly authService: AuthService) {}
 
+  @AuthRateLimit()
   @Mutation(() => AuthPayload, {
     description:
       'Valid values for regionId, genderId and ageGroupId are listed at https://cu1114.camp.lnu.se/docs/schema/reference-data',
@@ -30,6 +32,7 @@ export class AuthResolver {
     );
   }
 
+  @AuthRateLimit()
   @Mutation(() => AuthPayload)
   async login(
     @Args('username') username: string,

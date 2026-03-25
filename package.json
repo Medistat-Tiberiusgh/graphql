@@ -23,6 +23,7 @@
     "@nestjs/graphql": "^13.2.4",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/throttler": "^6.5.0",
     "bcrypt": "^6.0.0",
     "dataloader": "^2.2.3",
     "graphql": "^16.13.0",
