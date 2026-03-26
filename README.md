@@ -28,7 +28,7 @@ GraphQL
    ```bash
    cd tests && npx @usebruno/cli run --env-file environments/Dev.bru --sandbox=developer
    ```
-   Make sure the API is running locally before executing.
+   > **Note:** Running tests locally requires a populated database. The Dockerised database with sample data and setup instructions is available at [gitlab.lnu.se/1dv027/student/tg222hh/exercises/from-csv-to-database](https://gitlab.lnu.se/1dv027/student/tg222hh/exercises/from-csv-to-database). Start the database and run the seed script before executing the tests.
 
 ## Dataset
 
