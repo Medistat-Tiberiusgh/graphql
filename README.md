@@ -24,10 +24,9 @@ GraphQL
 **Examiner can verify tests in one of the following ways:**
 
 1. **CI/CD pipeline** — check the pipeline output in GitLab for test results.
-2. **Run manually** — requires [Bruno CLI](https://docs.usebruno.com/bru-cli/overview):
+2. **Run manually** — from the `tests/` directory:
    ```bash
-   npm install -g @usebruno/cli
-   bru run tests/ --env-file tests/environments/Dev.bru --sandbox=developer
+   cd tests && npx @usebruno/cli run --env-file environments/Dev.bru --sandbox=developer
    ```
    Make sure the API is running locally before executing.
 
