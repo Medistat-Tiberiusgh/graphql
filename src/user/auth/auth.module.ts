@@ -14,7 +14,8 @@ import { JwtAuthGuard } from './jwt.guard';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '2h' },
+        // HS256 (HMAC-SHA256) is the default when using a symmetric secret. It can be set explicitly with:
+        // signOptions: { expiresIn: '2h', algorithm: 'HS256' }
       }),
     }),
   ],
