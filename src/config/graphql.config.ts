@@ -3,7 +3,8 @@ import { GraphQLObjectType, GraphQLSchema } from 'graphql';
 
 export const graphqlConfig: ApolloDriverConfig = {
   driver: ApolloDriver,
-  autoSchemaFile: true,
+  autoSchemaFile: 'schema.gql',
+  csrfPrevention: false,
   transformSchema: (schema: GraphQLSchema) => {
     const description =
       'Full API documentation: https://cu1114.camp.lnu.se/docs/';
