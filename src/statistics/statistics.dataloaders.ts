@@ -46,10 +46,10 @@ export class StatisticsDataLoaders {
   readonly regionById = new DataLoader<string, Region | undefined>(
     async (regionIds: readonly string[]) => {
       const rows = await this.db.query<Region>(
-        'SELECT id AS "regionCode", name AS "regionName" FROM regions WHERE id = ANY($1)',
+        'SELECT id, name AS "regionName" FROM regions WHERE id = ANY($1)',
         [[...regionIds]],
       );
-      const map = new Map(rows.map((r) => [String(r.regionCode), r]));
+      const map = new Map(rows.map((r) => [String(r.id), r]));
       return regionIds.map((id) => map.get(id));
     },
   );

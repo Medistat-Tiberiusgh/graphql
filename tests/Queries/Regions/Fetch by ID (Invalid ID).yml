@@ -8,15 +8,15 @@ graphql:
   url: "{{baseUrl}}/graphql"
   body:
     query: |
-      query GetRegion($regionCode: String!) {
-        region(regionCode: $regionCode) {
-          regionCode
+      query GetRegion($regionId: Int!) {
+        region(regionId: $regionId) {
+          id
           regionName
         }
       }
     variables: |-
       {
-        "regionCode": "INVALID"
+        "regionId": 99999
       }
   auth: inherit
 

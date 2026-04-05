@@ -1,4 +1,4 @@
-import { Args, Query, Resolver } from '@nestjs/graphql';
+import { Args, Int, Query, Resolver } from '@nestjs/graphql';
 import { Region } from './region.model';
 import { RegionsService } from './regions.service';
 
@@ -13,8 +13,8 @@ export class RegionsResolver {
 
   @Query(() => Region)
   async region(
-    @Args('regionCode') regionCode: string,
+    @Args('regionId', { type: () => Int }) regionId: number,
   ): Promise<Region> {
-    return this.regionsService.findOne(regionCode);
+    return this.regionsService.findOne(regionId);
   }
 }

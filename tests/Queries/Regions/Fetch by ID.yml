@@ -8,15 +8,15 @@ graphql:
   url: "{{baseUrl}}/graphql"
   body:
     query: |
-      query GetRegion($regionCode: String!) {
-        region(regionCode: $regionCode) {
-          regionCode
+      query GetRegion($regionId: Int!) {
+        region(regionId: $regionId) {
+          id
           regionName
         }
       }
     variables: |-
       {
-        "regionCode": "8"
+        "regionId": 8
       }
   auth: inherit
 
@@ -32,7 +32,7 @@ runtime:
         });
 
         test("Region has correct data", () => {
-            expect(body.data.region.regionCode).to.equal("8");
+            expect(body.data.region.id).to.equal(8);
             expect(body.data.region.regionName).to.equal("Kalmar län");
         });
 
