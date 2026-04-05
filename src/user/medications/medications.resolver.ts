@@ -30,8 +30,8 @@ export class UserMedicationsResolver {
   }
 
   @ResolveField(() => DrugInsights, { nullable: true })
-  insights(@Parent() med: UserMedication): Promise<DrugInsights> {
-    return this.insightsService.getInsights(med.atc);
+  insights(@Parent() med: UserMedication): Partial<DrugInsights> {
+    return { atcCode: med.atc };
   }
 
   @Query(() => [UserMedication])

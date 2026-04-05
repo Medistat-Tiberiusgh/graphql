@@ -8,9 +8,9 @@ export class DrugsService {
   constructor(private readonly db: DatabaseService) {}
 
   async findAll(): Promise<Drug[]> {
-    const sql =
-      'SELECT atc AS "atcCode", name, narcotic_class AS "narcoticClass" FROM drugs';
-    return this.db.query<Drug>(sql);
+    return this.db.query<Drug>(
+      'SELECT atc AS "atcCode", name, narcotic_class AS "narcoticClass" FROM drugs ORDER BY name',
+    );
   }
 
   async findOne(atcCode: string): Promise<Drug> {
