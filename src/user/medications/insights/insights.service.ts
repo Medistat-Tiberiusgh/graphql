@@ -16,6 +16,11 @@ export interface InsightFilters {
   ageGroup?: number;
 }
 
+// IDs for the pre-aggregated "total" rows in the source data
+const TOTAL_GENDER = 3;   // "Båda könen"
+const TOTAL_AGE_GROUP = 99; // "Totalt"
+const TOTAL_REGION = 0;   // "Riket"
+
 @Injectable()
 export class InsightsService {
   constructor(private readonly db: DatabaseService) {}
@@ -64,68 +69,48 @@ export class InsightsService {
     atc: string,
     filters: InsightFilters,
   ): Promise<RegionalStat[]> {
-    const params: unknown[] = [atc];
-    const conditions: string[] = [];
+    const gender = filters.gender ?? TOTAL_GENDER;
+    const ageGroup = filters.ageGroup ?? TOTAL_AGE_GROUP;
+    const params: unknown[] = [atc, gender, ageGroup];
 
-    if (filters.year !== undefined) {
-      params.push(filters.year);
-      conditions.push(`pd.year = $${params.length}`);
-    } else {
-      conditions.push(
-        `pd.year = (SELECT MAX(year) FROM prescription_data WHERE atc = $1)`,
-      );
-    }
-
-    if (filters.gender !== undefined) {
-      params.push(filters.gender);
-      conditions.push(`pd.gender = $${params.length}`);
-    }
-    if (filters.ageGroup !== undefined) {
-      params.push(filters.ageGroup);
-      conditions.push(`pd.age_group = $${params.length}`);
-    }
-
-    const where = conditions.join(' AND ');
+    const yearCondition = filters.year !== undefined
+      ? `pd.year = $${params.push(filters.year) && params.length}`
+      : `pd.year = (SELECT MAX(year) FROM prescription_data WHERE atc = $1)`;
 
     return this.db.query<RegionalStat>(
-      `SELECT pd.region AS "regionId", r.name AS "regionName",
-              ROUND(SUM(pd.per_1000)::numeric, 2) AS "per1000"
+      `SELECT pd.region AS "regionId", r.name AS "regionName", pd.per_1000 AS "per1000"
        FROM prescription_data pd
        JOIN regions r ON r.id = pd.region
-       WHERE pd.atc = $1 AND ${where}
-       GROUP BY pd.region, r.name
-       ORDER BY "per1000" DESC`,
+       WHERE pd.atc = $1
+         AND pd.gender = $2
+         AND pd.age_group = $3
+         AND ${yearCondition}
+         AND pd.region <> ${TOTAL_REGION}
+       ORDER BY pd.per_1000 DESC`,
       params,
     );
   }
 
   async getTrend(atc: string, filters: InsightFilters): Promise<TrendPoint[]> {
-    const params: unknown[] = [atc];
-    const conditions: string[] = [];
+    const region = filters.region ?? TOTAL_REGION;
+    const gender = filters.gender ?? TOTAL_GENDER;
+    const ageGroup = filters.ageGroup ?? TOTAL_AGE_GROUP;
 
-    if (filters.region !== undefined) {
-      params.push(filters.region);
-      conditions.push(`region = $${params.length}`);
-    }
-    if (filters.gender !== undefined) {
-      params.push(filters.gender);
-      conditions.push(`gender = $${params.length}`);
-    }
-    if (filters.ageGroup !== undefined) {
-      params.push(filters.ageGroup);
-      conditions.push(`age_group = $${params.length}`);
-    }
-
-    const where =
-      conditions.length > 0 ? `AND ${conditions.join(' AND ')}` : '';
+    const params: unknown[] = [atc, region, gender, ageGroup];
+    const yearCondition = filters.year !== undefined
+      ? `AND year = $${params.push(filters.year) && params.length}`
+      : '';
 
     return this.db.query<TrendPoint>(
       `SELECT year,
-              SUM(num_prescriptions) AS "totalPrescriptions",
-              SUM(num_patients) AS "totalPatients"
+              num_prescriptions AS "totalPrescriptions",
+              num_patients AS "totalPatients"
        FROM prescription_data
-       WHERE atc = $1 ${where}
-       GROUP BY year
+       WHERE atc = $1
+         AND region = $2
+         AND gender = $3
+         AND age_group = $4
+         ${yearCondition}
        ORDER BY year`,
       params,
     );
@@ -135,33 +120,23 @@ export class InsightsService {
     atc: string,
     filters: InsightFilters,
   ): Promise<GenderSplitPoint[]> {
-    const params: unknown[] = [atc];
-    const conditions: string[] = [];
+    const region = filters.region ?? TOTAL_REGION;
+    const ageGroup = filters.ageGroup ?? TOTAL_AGE_GROUP;
+    const params: unknown[] = [atc, region, ageGroup, TOTAL_GENDER];
 
-    if (filters.year !== undefined) {
-      params.push(filters.year);
-      conditions.push(`pd.year = $${params.length}`);
-    }
-    if (filters.region !== undefined) {
-      params.push(filters.region);
-      conditions.push(`pd.region = $${params.length}`);
-    }
-    if (filters.ageGroup !== undefined) {
-      params.push(filters.ageGroup);
-      conditions.push(`pd.age_group = $${params.length}`);
-    }
-
-    const where =
-      conditions.length > 0 ? `AND ${conditions.join(' AND ')}` : '';
+    const yearCondition = filters.year !== undefined
+      ? `AND pd.year = $${params.push(filters.year) && params.length}`
+      : '';
 
     return this.db.query<GenderSplitPoint>(
-      `SELECT pd.year,
-              g.name AS "gender",
-              ROUND(SUM(pd.per_1000)::numeric, 2) AS "per1000"
+      `SELECT pd.year, g.name AS "gender", pd.per_1000 AS "per1000"
        FROM prescription_data pd
        JOIN genders g ON g.id = pd.gender
-       WHERE pd.atc = $1 ${where}
-       GROUP BY pd.year, g.name
+       WHERE pd.atc = $1
+         AND pd.region = $2
+         AND pd.age_group = $3
+         AND pd.gender <> $4
+         ${yearCondition}
        ORDER BY pd.year, g.name`,
       params,
     );
@@ -171,28 +146,14 @@ export class InsightsService {
     atc: string,
     filters: InsightFilters,
   ): Promise<number> {
-    const params: unknown[] = [atc];
-    const conditions: string[] = [];
+    const region = filters.region ?? TOTAL_REGION;
+    const gender = filters.gender ?? TOTAL_GENDER;
+    const ageGroup = filters.ageGroup ?? TOTAL_AGE_GROUP;
+    const params: unknown[] = [atc, region, gender, ageGroup];
 
-    if (filters.year !== undefined) {
-      params.push(filters.year);
-      conditions.push(`year = $${params.length}`);
-    }
-    if (filters.region !== undefined) {
-      params.push(filters.region);
-      conditions.push(`region = $${params.length}`);
-    }
-    if (filters.gender !== undefined) {
-      params.push(filters.gender);
-      conditions.push(`gender = $${params.length}`);
-    }
-    if (filters.ageGroup !== undefined) {
-      params.push(filters.ageGroup);
-      conditions.push(`age_group = $${params.length}`);
-    }
-
-    const where =
-      conditions.length > 0 ? `AND ${conditions.join(' AND ')}` : '';
+    const yearCondition = filters.year !== undefined
+      ? `AND year = $${params.push(filters.year) && params.length}`
+      : '';
 
     const rows = await this.db.query<{ ratio: string }>(
       `SELECT ROUND(
@@ -200,7 +161,11 @@ export class InsightsService {
          2
        ) AS ratio
        FROM prescription_data
-       WHERE atc = $1 ${where}`,
+       WHERE atc = $1
+         AND region = $2
+         AND gender = $3
+         AND age_group = $4
+         ${yearCondition}`,
       params,
     );
 
