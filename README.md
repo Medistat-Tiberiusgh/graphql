@@ -26,8 +26,7 @@ GraphQL
 1. **CI/CD pipeline** — check the pipeline output in GitLab for test results.
 2. **Run manually** — requires [Bruno CLI](https://docs.usebruno.com/bru-cli/overview):
    ```bash
-   npm install -g @usebruno/cli
-   bru run tests/ --env-file tests/environments/Dev.bru --sandbox=developer
+   npx bru run --env-file environments/Dev.bru --sandbox=developer
    ```
    Make sure the API is running locally before executing.
 
