@@ -2,7 +2,7 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 
 export interface JwtPayload {
-  sub: number;
+  sub: string;
   username: string;
   regionId: number;
   genderId: number;

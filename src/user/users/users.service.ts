@@ -3,7 +3,7 @@ import { DatabaseService } from '../../database/database.service';
 import { AppError } from '../../common/app-error';
 
 export interface User {
-  id: number;
+  id: string;
   username: string;
   password_hash: string;
   region_id: number;
@@ -23,7 +23,7 @@ export class UsersService {
     return rows[0];
   }
 
-  async delete(id: number): Promise<boolean> {
+  async delete(id: string): Promise<boolean> {
     const rows = await this.db.query(
       'DELETE FROM users WHERE id = $1 RETURNING id',
       [id],

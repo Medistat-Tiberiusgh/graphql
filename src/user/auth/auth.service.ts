@@ -13,7 +13,7 @@ export class AuthService {
   ) {}
 
   private signToken(user: {
-    id: number;
+    id: string;
     username: string;
     region_id: number;
     gender_id: number;
@@ -96,7 +96,7 @@ export class AuthService {
     return { token: this.signToken(user), username: user.username };
   }
 
-  async deleteAccount(userId: number, confirm: boolean): Promise<boolean> {
+  async deleteAccount(userId: string, confirm: boolean): Promise<boolean> {
     if (!confirm) {
       throw new AppError(
         'You must set confirm to true to delete your account',

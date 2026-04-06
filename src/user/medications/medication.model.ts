@@ -17,7 +17,7 @@ export class UserMedication {
 
 @ObjectType()
 export class Me {
-  userId!: number;
+  userId!: string;
 
   @Field(() => [UserMedication])
   medications!: UserMedication[];

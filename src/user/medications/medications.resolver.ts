@@ -60,7 +60,6 @@ export class UserMedicationsResolver {
 }
 
 @Resolver(() => UserMedication)
-@UseGuards(JwtAuthGuard)
 export class UserMedicationResolver {
   constructor(private readonly insightsService: InsightsService) {}
 
