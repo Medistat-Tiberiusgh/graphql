@@ -10,33 +10,26 @@ import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/current-user.decorator';
-import { UserMedication } from './medication.model';
+import { Me, UserMedication } from './medication.model';
 import { UserMedicationsService } from './medications.service';
-import { InsightsService } from './insights/insights.service';
 import { Drug } from '../../drugs/drug.model';
-import { DrugInsights } from './insights/insights.model';
+import { InsightsService } from './insights/insights.service';
 
-@Resolver(() => UserMedication)
+@Resolver(() => Me)
 @UseGuards(JwtAuthGuard)
 export class UserMedicationsResolver {
-  constructor(
-    private readonly service: UserMedicationsService,
-    private readonly insightsService: InsightsService,
-  ) {}
+  constructor(private readonly service: UserMedicationsService) {}
 
-  @ResolveField(() => Drug, { nullable: true })
-  drugData(@Parent() med: UserMedication): Promise<Drug | undefined> {
-    return this.insightsService.getDrug(med.atc);
+  @Query(() => Me)
+  me(@CurrentUser() user: JwtPayload): Me {
+    const result = new Me();
+    result.userId = user.sub;
+    return result;
   }
 
-  @ResolveField(() => DrugInsights, { nullable: true })
-  insights(@Parent() med: UserMedication): Partial<DrugInsights> {
-    return { atcCode: med.atc };
-  }
-
-  @Query(() => [UserMedication])
-  myMedications(@CurrentUser() user: JwtPayload): Promise<UserMedication[]> {
-    return this.service.findAllForUser(user.sub);
+  @ResolveField(() => [UserMedication])
+  medications(@Parent() parent: Me): Promise<UserMedication[]> {
+    return this.service.findAllForUser(parent.userId);
   }
 
   @Mutation(() => UserMedication)
@@ -63,5 +56,16 @@ export class UserMedicationsResolver {
     @Args('atc') atc: string,
   ): Promise<string> {
     return this.service.remove(user.sub, atc);
+  }
+}
+
+@Resolver(() => UserMedication)
+@UseGuards(JwtAuthGuard)
+export class UserMedicationResolver {
+  constructor(private readonly insightsService: InsightsService) {}
+
+  @ResolveField(() => Drug, { nullable: true })
+  drugData(@Parent() med: UserMedication): Promise<Drug | undefined> {
+    return this.insightsService.getDrug(med.atc);
   }
 }

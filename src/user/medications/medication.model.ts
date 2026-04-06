@@ -1,6 +1,5 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 import { Drug } from '../../drugs/drug.model';
-import { DrugInsights } from './insights/insights.model';
 
 @ObjectType()
 export class UserMedication {
@@ -10,11 +9,16 @@ export class UserMedication {
   notes?: string;
 
   @Field()
-  addedAt: Date;
+  addedAt!: Date;
 
   @Field(() => Drug, { nullable: true })
   drugData?: Drug;
+}
 
-  @Field(() => DrugInsights, { nullable: true })
-  insights?: DrugInsights;
+@ObjectType()
+export class Me {
+  userId!: number;
+
+  @Field(() => [UserMedication])
+  medications!: UserMedication[];
 }
