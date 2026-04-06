@@ -8,19 +8,14 @@ graphql:
   url: "{{baseUrl}}/graphql"
   body:
     query: |
-      query GetMyMedications {
-        myMedications {
-          notes
-          addedAt
-          drugData {
-            atcCode
-            name
-          }
-          insights {
-            regionalPopularity {
-              regionId
-              regionName
-              per1000
+      query GetMe {
+        me {
+          medications {
+            notes
+            addedAt
+            drugData {
+              atcCode
+              name
             }
           }
         }
@@ -32,23 +27,17 @@ runtime:
     - type: after-response
       code: |-
         const body = res.getBody();
-        const med = body.data.myMedications[0];
+        const med = body.data.me.medications[0];
 
         test("Get my medications succeeds", () => {
             expect(body.errors).to.be.undefined;
-            expect(body.data.myMedications).to.be.an("array");
+            expect(body.data.me.medications).to.be.an("array");
         });
 
         test("Medication has correct structure", () => {
             expect(med).to.have.property("addedAt");
             expect(med).to.have.property("notes");
             expect(med.drugData).to.have.property("atcCode");
-        });
-
-        test("Medication includes regional insights", () => {
-            expect(med.insights.regionalPopularity).to.be.an("array");
-            expect(med.insights.regionalPopularity[0]).to.have.property("regionId");
-            expect(med.insights.regionalPopularity[0]).to.have.property("per1000");
         });
 
 settings:
