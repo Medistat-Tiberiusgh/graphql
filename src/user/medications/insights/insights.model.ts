@@ -22,6 +22,9 @@ export class TrendPoint {
 
   @Field(() => Int)
   totalPatients!: number;
+
+  @Field(() => Float)
+  per1000!: number;
 }
 
 @ObjectType()
@@ -31,6 +34,21 @@ export class GenderSplitPoint {
 
   @Field()
   gender!: string;
+
+  @Field(() => Float)
+  per1000!: number;
+}
+
+@ObjectType()
+export class AgeSplitPoint {
+  @Field(() => Int)
+  year!: number;
+
+  @Field(() => Int)
+  ageGroupId!: number;
+
+  @Field()
+  ageGroupName!: string;
 
   @Field(() => Float)
   per1000!: number;
@@ -57,9 +75,6 @@ export class DrugInsights {
   @Field(() => [GenderSplitPoint])
   genderSplit!: GenderSplitPoint[];
 
-  @Field(() => Float, {
-    description:
-      'Average number of prescriptions per patient. Values above 1 indicate recurring/chronic use.',
-  })
-  chronicUseRatio!: number;
+  @Field(() => [AgeSplitPoint])
+  ageSplit!: AgeSplitPoint[];
 }

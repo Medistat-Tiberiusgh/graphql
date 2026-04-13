@@ -3,6 +3,7 @@ import { AppError } from '../../../common/app-error';
 import { DatabaseService } from '../../../database/database.service';
 import { Drug } from '../../../drugs/drug.model';
 import {
+  AgeSplitPoint,
   DrugInsights,
   GenderSplitPoint,
   RegionalStat,
@@ -104,7 +105,8 @@ export class InsightsService {
     return this.db.query<TrendPoint>(
       `SELECT year,
               num_prescriptions AS "totalPrescriptions",
-              num_patients AS "totalPatients"
+              num_patients AS "totalPatients",
+              per_1000 AS "per1000"
        FROM prescription_data
        WHERE atc = $1
          AND region = $2
@@ -142,34 +144,33 @@ export class InsightsService {
     );
   }
 
-  async getChronicUseRatio(
+  async getAgeSplit(
     atc: string,
     filters: InsightFilters,
-  ): Promise<number> {
+  ): Promise<AgeSplitPoint[]> {
     const region = filters.region ?? TOTAL_REGION;
     const gender = filters.gender ?? TOTAL_GENDER;
-    const ageGroup = filters.ageGroup ?? TOTAL_AGE_GROUP;
-    const params: unknown[] = [atc, region, gender, ageGroup];
+    const params: unknown[] = [atc, region, gender, TOTAL_AGE_GROUP];
 
     const yearCondition = filters.year !== undefined
-      ? `AND year = $${params.push(filters.year) && params.length}`
+      ? `AND pd.year = $${params.push(filters.year) && params.length}`
       : '';
 
-    const rows = await this.db.query<{ ratio: string }>(
-      `SELECT ROUND(
-         (SUM(num_prescriptions)::float / NULLIF(SUM(num_patients), 0))::numeric,
-         2
-       ) AS ratio
-       FROM prescription_data
-       WHERE atc = $1
-         AND region = $2
-         AND gender = $3
-         AND age_group = $4
-         ${yearCondition}`,
+    return this.db.query<AgeSplitPoint>(
+      `SELECT pd.year,
+              pd.age_group AS "ageGroupId",
+              ag.name AS "ageGroupName",
+              pd.per_1000 AS "per1000"
+       FROM prescription_data pd
+       JOIN age_groups ag ON ag.id = pd.age_group
+       WHERE pd.atc = $1
+         AND pd.region = $2
+         AND pd.gender = $3
+         AND pd.age_group <> $4
+         ${yearCondition}
+       ORDER BY pd.year, pd.age_group`,
       params,
     );
-
-    return parseFloat(rows[0]?.ratio ?? '0');
   }
 
   async getInsights(atc: string): Promise<DrugInsights> {

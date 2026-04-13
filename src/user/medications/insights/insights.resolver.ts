@@ -9,6 +9,7 @@ import {
 } from '@nestjs/graphql';
 import { JwtAuthGuard } from '../../auth/jwt.guard';
 import {
+  AgeSplitPoint,
   DrugInsights,
   GenderSplitPoint,
   RegionalStat,
@@ -65,13 +66,14 @@ export class InsightsResolver {
     });
   }
 
-  @ResolveField(() => Number)
-  chronicUseRatio(@Parent() ctx: DrugInsights): Promise<number> {
-    return this.insightsService.getChronicUseRatio(ctx.atcCode!, {
+  @ResolveField(() => [AgeSplitPoint])
+  ageSplit(@Parent() ctx: DrugInsights): Promise<AgeSplitPoint[]> {
+    return this.insightsService.getAgeSplit(ctx.atcCode!, {
       year: ctx.year,
       region: ctx.region,
       gender: ctx.gender,
       ageGroup: ctx.ageGroup,
     });
   }
+
 }
