@@ -4,9 +4,10 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 export interface JwtPayload {
   sub: string;
   username: string;
-  regionId: number;
-  genderId: number;
-  ageGroupId: number;
+  regionId: number | null;
+  genderId: number | null;
+  ageGroupId: number | null;
+  avatarUrl: string | null;
 }
 
 export const CurrentUser = createParamDecorator(
