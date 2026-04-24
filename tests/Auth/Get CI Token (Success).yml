@@ -1,0 +1,53 @@
+info:
+  name: Get CI Token (Success)
+  type: graphql
+  seq: 1
+
+graphql:
+  method: POST
+  url: '{{baseUrl}}/graphql'
+  body:
+    query: |
+      mutation GetCiToken($secret: String!, $username: String!) {
+        ciToken(secret: $secret, username: $username) {
+          token
+          username
+        }
+      }
+    variables: |-
+      {
+        "secret": "{{ciAuthSecret}}",
+        "username": "{{testUsername}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        bru.setVar("testUsername", `test_${Date.now()}`);
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        if (body.data && body.data.ciToken) {
+            bru.setVar("jwtToken", body.data.ciToken.token);
+            bru.setVar("testUsername", body.data.ciToken.username);
+        }
+
+        test("ciToken returns a token", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.ciToken).to.have.property("token");
+            expect(body.data.ciToken.token).to.be.a("string");
+        });
+
+        test("ciToken returns correct username", () => {
+            expect(body.data.ciToken.username).to.be.a("string");
+            expect(body.data.ciToken.username).to.include("test_");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

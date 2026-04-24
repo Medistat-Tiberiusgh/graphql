@@ -1,0 +1,28 @@
+name: Dev
+variables:
+  - name: baseUrl
+    value: http://localhost:3000
+    type: string
+    enabled: true
+  - name: ciAuthSecret
+    value: ""
+    type: string
+    enabled: true
+    secret: true
+  - name: jwtToken
+    value: ""
+    type: string
+    enabled: true
+    secret: true
+  - name: testUsername
+    value: ""
+    type: string
+    enabled: true
+  - name: testAtcCode
+    value: ""
+    type: string
+    enabled: true
+  - name: testStatisticId
+    value: ""
+    type: string
+    enabled: true
