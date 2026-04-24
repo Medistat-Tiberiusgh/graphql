@@ -21,6 +21,11 @@ export class DrugsResolver {
     return this.drugsService.findOne(atcCode);
   }
 
+  @Query(() => [Drug])
+  async searchDrugs(@Args('query') query: string): Promise<Drug[]> {
+    return this.drugsService.search(query);
+  }
+
   @Query(() => DrugInfo, { nullable: true })
   async drugInfo(@Args('atcCode') atcCode: string): Promise<DrugInfo | null> {
     return this.drugInfoService.getDrugInfo(atcCode);
