@@ -4,7 +4,7 @@ import { DatabaseService } from '../../../database/database.service';
 import { Drug } from '../../../drugs/drug.model';
 import {
   AgeSplitPoint,
-  DrugInsights,
+  DemographicCell,
   GenderSplitPoint,
   RegionalStat,
   TrendPoint,
@@ -173,8 +173,34 @@ export class InsightsService {
     );
   }
 
-  async getInsights(atc: string): Promise<DrugInsights> {
-    const regionalPopularity = await this.getRegionalPopularity(atc, {});
-    return { regionalPopularity } as DrugInsights;
+  async getDemographicGrid(
+    atc: string,
+    filters: InsightFilters,
+  ): Promise<DemographicCell[]> {
+    const region = filters.region ?? TOTAL_REGION;
+    const params: unknown[] = [atc, region];
+
+    // Use the requested year or fall back to the latest available year for this drug+region.
+    const yearCondition = filters.year !== undefined
+      ? `AND pd.year = $${params.push(filters.year) && params.length}`
+      : `AND pd.year = (SELECT MAX(year) FROM prescription_data WHERE atc = $1 AND region = $2)`;
+
+    return this.db.query<DemographicCell>(
+      `SELECT g.name  AS "gender",
+              pd.age_group AS "ageGroupId",
+              ag.name AS "ageGroupName",
+              pd.per_1000 AS "per1000"
+       FROM prescription_data pd
+       JOIN genders   g  ON g.id  = pd.gender
+       JOIN age_groups ag ON ag.id = pd.age_group
+       WHERE pd.atc    = $1
+         AND pd.region = $2
+         AND pd.gender    <> ${TOTAL_GENDER}
+         AND pd.age_group <> ${TOTAL_AGE_GROUP}
+         ${yearCondition}
+       ORDER BY pd.age_group, pd.gender`,
+      params,
+    );
   }
+
 }

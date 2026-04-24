@@ -10,6 +10,7 @@ import {
 import { JwtAuthGuard } from '../../auth/jwt.guard';
 import {
   AgeSplitPoint,
+  DemographicCell,
   DrugInsights,
   GenderSplitPoint,
   RegionalStat,
@@ -76,4 +77,11 @@ export class InsightsResolver {
     });
   }
 
+  @ResolveField(() => [DemographicCell])
+  demographicGrid(@Parent() ctx: DrugInsights): Promise<DemographicCell[]> {
+    return this.insightsService.getDemographicGrid(ctx.atcCode!, {
+      year: ctx.year,
+      region: ctx.region,
+    });
+  }
 }

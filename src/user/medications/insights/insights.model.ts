@@ -54,6 +54,21 @@ export class AgeSplitPoint {
   per1000!: number;
 }
 
+@ObjectType()
+export class DemographicCell {
+  @Field()
+  gender!: string;
+
+  @Field(() => Int)
+  ageGroupId!: number;
+
+  @Field()
+  ageGroupName!: string;
+
+  @Field(() => Float)
+  per1000!: number;
+}
+
 @ObjectType({
   description:
     'Aggregated insights for a drug. All fields are independently resolved and filtered by the arguments passed to the drugInsights query.',
@@ -77,4 +92,7 @@ export class DrugInsights {
 
   @Field(() => [AgeSplitPoint])
   ageSplit!: AgeSplitPoint[];
+
+  @Field(() => [DemographicCell])
+  demographicGrid!: DemographicCell[];
 }
