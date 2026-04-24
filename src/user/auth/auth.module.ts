@@ -5,6 +5,7 @@ import { UsersModule } from '../users/users.module';
 import { AuthService } from './auth.service';
 import { AuthResolver } from './auth.resolver';
 import { JwtAuthGuard } from './jwt.guard';
+import { OAuthController } from './oauth.controller';
 
 @Module({
   imports: [
@@ -14,10 +15,11 @@ import { JwtAuthGuard } from './jwt.guard';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '2h' },
+        // signOptions: { expiresIn: '2h' },
       }),
     }),
   ],
+  controllers: [OAuthController],
   providers: [AuthService, AuthResolver, JwtAuthGuard],
   exports: [JwtModule, JwtAuthGuard],
 })
