@@ -43,23 +43,17 @@ GraphQL
 
 ### Authentication
 
-JWT Authentication
+The API delegates identity to GitHub via OAuth 2.0 with PKCE (RFC 7636, `S256`), then issues its own session token as a JWT.
 
-The API uses JSON Web Tokens (JWT) with the HS256 algorithm, signed with a secret loaded from the `JWT_SECRET` environment variable. Tokens are issued on register and login mutations and expire after 2 hours. The payload of the JWT includes the user's `ID` (sub), `username`, `regionId`, `genderId`, and `ageGroupId` . The latter ones are embedded in order to avoid extra database lookups on every request requiiring authentication.
+**OAuth 2.0 with PKCE.** The frontend generates a cryptographically random `code_verifier`, derives a SHA-256 `code_challenge` from it, and stores the verifier in `sessionStorage`. It then redirects the user to GitHub's authorization endpoint with the challenge attached. GitHub redirects back to the frontend with an authorization `code`. The frontend POSTs `{ code, codeVerifier, redirectUri }` to `POST /auth/github/exchange`, where the backend completes the token exchange with GitHub — including the verifier — and, on success, fetches the user's GitHub profile, upserts the user record, and returns a JWT.
 
-A custom `JwtAuthGuard` validates the token on every protected query/mutation by extracting it from the GraphQL request context, verifying the signature and expiry, and attaching the decoded payload to the request. The `@CurrentUser()` parameter decorator then makes the payload available inside resolvers.
+**Why PKCE?** It defeats two distinct attacks. The first is OAuth login CSRF: an attacker tricks a victim's browser into completing a flow with the attacker's authorization code, silently logging the victim in as the attacker. The second is authorization code interception. PKCE binds the authorization code to the original initiator — the verifier never leaves the browser that started the flow, so a code redeemed without it is rejected. Modern OAuth guidance (OAuth 2.1 draft) recommends PKCE for all client types, including confidential server-side clients like this one.
 
-There is no refresh token mechanism once a token expires, the user must log in again. A refresh mekanism for the token has not been implemented because of time constraint. The 2 hour expiry felt like a good trade-off for normal usage.
+**JWT session.** After the exchange the API issues a JSON Web Token signed with HS256 using the `JWT_SECRET` environment variable. The payload contains the user's `sub` (id), `username`, `avatarUrl`, and the optional demographic identifiers `regionId`, `genderId`, and `ageGroupId` (any of which may be `null` for newly-created GitHub users). Embedding these avoids an extra database lookup on every authenticated request. A custom `JwtAuthGuard` validates the token on every protected query/mutation by extracting it from the GraphQL request context, verifying the signature, and attaching the decoded payload to the request. The `@CurrentUser()` parameter decorator then makes the payload available inside resolvers.
 
-Why this approach?
-Firstly to satisfy the issues #3, #7 and #14. A big selling point of the JWT is the fact that is stateless meaning the the server does not need to store or coordinate user state. By having the authentification and authorization stateless the application becomes easyer to scale horizontally since any server instance can independently verify a token without consulting a shared session store.
+**Why JWT?** This addresses issues #3, #7 and #14. JWTs are stateless — the server does not store or coordinate session data — which makes the application easier to scale horizontally since any instance can independently verify a token without consulting a shared session store. The main alternative is server-side session cookies, which are stateful and simpler to invalidate immediately (an advantage JWTs lack without a blocklist), but introduce coordination overhead when scaling across multiple instances.
 
-The main alternative to JWT is server-side session cookies, which are stateful meaning that the server
-stores session data. The advantage with session cookies is that they are simpler to invalidate
-immediately (a key advantage JWT lacks without a blocklist), but introduce coordination
-overhead when scaling across multiple instances.
-
-Worth mentioneing i believe is the fact that authentication and authorization are security-critical operation where missconfiguration can lead to both application failures and dataleckage. For this reason i believe it is worth considering whether to delegate this responsibility to a specialized third-party provider such as an OAuth 2.0 / OpenID Connect service, which offloads token management, rotation, and revocation to a purpose-built system.
+**Why delegate identity to GitHub?** Authentication is a security-critical operation where misconfiguration leads to data leakage. Delegating identity to a specialized provider offloads password storage, credential rotation, and account recovery to a purpose-built system, leaving the API to handle only authorization (the JWT). The trade-off is that all users must have a GitHub account.
 
 ### API Design
 
@@ -73,7 +67,7 @@ Through NestJS, the graphql schema is designed through decoraters, keeping imple
 
 **Queries** are split by resource. Reference data is publicly accessible. `myMedications` requires a valid JWT and returns only the authenticated user's data.
 
-**Mutations** are grouped into auth (`register`, `login`, `deleteAccount`) and medications (`addMedication`, `updateMedication`, `removeMedication`). All medication mutations and `deleteAccount` are protected by the JWT guard. `deleteAccount` requires an explicit `confirm: true` argument to prevent accidental deletion.
+**Mutations** are grouped into auth (`deleteAccount`) and medications (`addMedication`, `updateMedication`, `removeMedication`). All four are protected by the JWT guard. `deleteAccount` requires an explicit `confirm: true` argument to prevent accidental deletion. The login flow itself runs over a REST endpoint (`POST /auth/github/exchange`) rather than a GraphQL mutation — see the Authentication section.
 
 - _How did you implement nested queries? How does the single-endpoint approach affect your design?_
 

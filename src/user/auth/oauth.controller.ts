@@ -1,31 +1,31 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import type { Response } from 'express';
+import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { AppError } from '../../common/app-error';
+
+interface ExchangeBody {
+  code?: string;
+  codeVerifier?: string;
+  redirectUri?: string;
+}
 
 @Controller('auth')
 export class OAuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
-  @Get('github')
-  githubLogin(@Res() res: Response) {
-    const clientId = this.configService.get<string>('GITHUB_CLIENT_ID');
-    const callbackUrl = this.configService.get<string>('GITHUB_CALLBACK_URL');
-    const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(callbackUrl!)}&scope=read:user`;
-    res.redirect(url);
-  }
-
-  @Get('github/callback')
-  async githubCallback(@Query('code') code: string, @Res() res: Response) {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-    try {
-      const token = await this.authService.githubCallback(code);
-      res.redirect(`${frontendUrl}?token=${token}`);
-    } catch {
-      res.redirect(`${frontendUrl}?error=oauth_failed`);
+  @Post('github/exchange')
+  async githubExchange(@Body() body: ExchangeBody): Promise<{ token: string }> {
+    const { code, codeVerifier, redirectUri } = body;
+    if (!code || !codeVerifier || !redirectUri) {
+      throw new AppError(
+        'code, codeVerifier and redirectUri are required',
+        'BAD_USER_INPUT',
+      );
     }
+    const token = await this.authService.githubCallback(
+      code,
+      codeVerifier,
+      redirectUri,
+    );
+    return { token };
   }
 }

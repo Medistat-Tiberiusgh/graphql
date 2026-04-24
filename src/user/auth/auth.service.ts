@@ -30,14 +30,24 @@ export class AuthService {
     });
   }
 
-  async githubCallback(code: string): Promise<string> {
+  async githubCallback(
+    code: string,
+    codeVerifier: string,
+    redirectUri: string,
+  ): Promise<string> {
     const clientId = this.configService.get<string>('GITHUB_CLIENT_ID');
     const clientSecret = this.configService.get<string>('GITHUB_CLIENT_SECRET');
 
     const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
       headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code }),
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+        code_verifier: codeVerifier,
+        redirect_uri: redirectUri,
+      }),
     });
     const tokenData = await tokenRes.json() as { access_token?: string; error?: string };
 
