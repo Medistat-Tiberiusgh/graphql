@@ -21,7 +21,7 @@ graphql:
               name
             }
             regionData {
-              regionCode
+              id
               regionName
             }
           }

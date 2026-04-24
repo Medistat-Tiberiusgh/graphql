@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from 'src/database/database.service';
-import { AppError } from 'src/common/app-error';
+import { DatabaseService } from '../../database/database.service';
+import { AppError } from '../../common/app-error';
 import { UserMedication } from './medication.model';
 
 @Injectable()
 export class UserMedicationsService {
   constructor(private readonly db: DatabaseService) {}
 
-  async findAllForUser(userId: number): Promise<UserMedication[]> {
+  async findAllForUser(userId: string): Promise<UserMedication[]> {
     return this.db.query<UserMedication>(
       'SELECT atc, notes, added_at AS "addedAt" FROM user_medications WHERE user_id = $1 ORDER BY added_at DESC',
       [userId],
@@ -15,7 +15,7 @@ export class UserMedicationsService {
   }
 
   async add(
-    userId: number,
+    userId: string,
     atc: string,
     notes?: string,
   ): Promise<UserMedication> {
@@ -52,13 +52,13 @@ export class UserMedicationsService {
   }
 
   async update(
-    userId: number,
+    userId: string,
     atc: string,
     notes: string | null,
   ): Promise<UserMedication> {
-    if (notes && notes.length > 500) {
+    if (notes && notes.length > 1000) {
       throw new AppError(
-        'Notes must not exceed 500 characters',
+        'Notes must not exceed 1000 characters',
         'BAD_USER_INPUT',
       );
     }
@@ -78,9 +78,9 @@ export class UserMedicationsService {
     return rows[0];
   }
 
-  async remove(userId: number, atc: string): Promise<string> {
-    const rows = await this.db.query(
-      'DELETE FROM user_medications WHERE user_id = $1 AND atc = $2 RETURNING atc',
+  async remove(userId: string, atc: string): Promise<UserMedication> {
+    const rows = await this.db.query<UserMedication>(
+      'DELETE FROM user_medications WHERE user_id = $1 AND atc = $2 RETURNING atc, notes, added_at AS "addedAt"',
       [userId, atc],
     );
 
@@ -88,6 +88,6 @@ export class UserMedicationsService {
       throw new AppError('Medication not found in your list', 'NOT_FOUND');
     }
 
-    return atc;
+    return rows[0];
   }
 }

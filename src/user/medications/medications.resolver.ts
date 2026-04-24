@@ -10,33 +10,26 @@ import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/current-user.decorator';
-import { UserMedication } from './medication.model';
+import { Me, UserMedication } from './medication.model';
 import { UserMedicationsService } from './medications.service';
-import { InsightsService } from './insights/insights.service';
 import { Drug } from '../../drugs/drug.model';
-import { DrugInsights } from './insights/insights.model';
+import { DrugsDataLoaders } from '../../drugs/drugs.dataloaders';
 
-@Resolver(() => UserMedication)
+@Resolver(() => Me)
 @UseGuards(JwtAuthGuard)
 export class UserMedicationsResolver {
-  constructor(
-    private readonly service: UserMedicationsService,
-    private readonly insightsService: InsightsService,
-  ) {}
+  constructor(private readonly service: UserMedicationsService) {}
 
-  @ResolveField(() => Drug, { nullable: true })
-  drugData(@Parent() med: UserMedication): Promise<Drug | undefined> {
-    return this.insightsService.getDrug(med.atc);
+  @Query(() => Me)
+  me(@CurrentUser() user: JwtPayload): Me {
+    const result = new Me();
+    result.userId = user.sub;
+    return result;
   }
 
-  @ResolveField(() => DrugInsights, { nullable: true })
-  insights(@Parent() med: UserMedication): Promise<DrugInsights> {
-    return this.insightsService.getInsights(med.atc);
-  }
-
-  @Query(() => [UserMedication])
-  myMedications(@CurrentUser() user: JwtPayload): Promise<UserMedication[]> {
-    return this.service.findAllForUser(user.sub);
+  @ResolveField(() => [UserMedication])
+  medications(@Parent() parent: Me): Promise<UserMedication[]> {
+    return this.service.findAllForUser(parent.userId);
   }
 
   @Mutation(() => UserMedication)
@@ -57,11 +50,21 @@ export class UserMedicationsResolver {
     return this.service.update(user.sub, atc, notes ?? null);
   }
 
-  @Mutation(() => String)
+  @Mutation(() => UserMedication)
   removeMedication(
     @CurrentUser() user: JwtPayload,
     @Args('atc') atc: string,
-  ): Promise<string> {
+  ): Promise<UserMedication> {
     return this.service.remove(user.sub, atc);
+  }
+}
+
+@Resolver(() => UserMedication)
+export class UserMedicationResolver {
+  constructor(private readonly loaders: DrugsDataLoaders) {}
+
+  @ResolveField(() => Drug, { nullable: true })
+  drugData(@Parent() med: UserMedication): Promise<Drug | undefined> {
+    return this.loaders.drugByAtcCode.load(med.atc);
   }
 }

@@ -8,19 +8,14 @@ graphql:
   url: "{{baseUrl}}/graphql"
   body:
     query: |
-      query GetMyMedications {
-        myMedications {
-          notes
-          addedAt
-          drugData {
-            atcCode
-            name
-          }
-          insights {
-            regionalPopularity {
-              regionId
-              regionName
-              per1000
+      query GetMe {
+        me {
+          medications {
+            notes
+            addedAt
+            drugData {
+              atcCode
+              name
             }
           }
         }

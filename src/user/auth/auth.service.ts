@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
-import { AuthPayload } from './auth.model';
 import { AppError } from '../../common/app-error';
 
 @Injectable()
@@ -10,14 +9,16 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   private signToken(user: {
-    id: number;
+    id: string;
     username: string;
-    region_id: number;
-    gender_id: number;
-    age_group_id: number;
+    region_id: number | null;
+    gender_id: number | null;
+    age_group_id: number | null;
+    avatarUrl?: string;
   }): string {
     return this.jwtService.sign({
       sub: user.id,
@@ -25,78 +26,56 @@ export class AuthService {
       regionId: user.region_id,
       genderId: user.gender_id,
       ageGroupId: user.age_group_id,
+      avatarUrl: user.avatarUrl ?? null,
     });
   }
 
-  async register(
-    username: string,
-    password: string,
-    regionId: number,
-    genderId: number,
-    ageGroupId: number,
-  ): Promise<AuthPayload> {
-    if (!username || username.trim().length === 0) {
-      throw new AppError(
-        'You forgot to provide the username',
-        'BAD_USER_INPUT',
-      );
-    }
-    if (username.length > 50) {
-      throw new AppError(
-        'No weird and long usernames. Pick one that is under 50 characters',
-        'BAD_USER_INPUT',
-      );
-    }
-    if (password.length < 6) {
-      throw new AppError(
-        'Password must be at least 6 characters',
-        'BAD_USER_INPUT',
-      );
-    }
-    if (password.length > 100) {
-      throw new AppError(
-        'Password must not exceed 100 characters',
-        'BAD_USER_INPUT',
-      );
+  async githubCallback(
+    code: string,
+    codeVerifier: string,
+    redirectUri: string,
+  ): Promise<string> {
+    const clientId = this.configService.get<string>('GITHUB_CLIENT_ID');
+    const clientSecret = this.configService.get<string>('GITHUB_CLIENT_SECRET');
+
+    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+        code_verifier: codeVerifier,
+        redirect_uri: redirectUri,
+      }),
+    });
+    const tokenData = await tokenRes.json() as { access_token?: string; error?: string };
+
+    if (!tokenData.access_token) {
+      throw new AppError('GitHub OAuth failed', 'UNAUTHENTICATED');
     }
 
-    if (regionId === 0) {
-      throw new AppError(
-        'Region with ID 0 ("Riket") cannot be used for registration',
-        'BAD_USER_INPUT',
-      );
-    }
-    if (genderId === 3) {
-      throw new AppError(
-        'Gender "Both" (id 3) cannot be used for registration',
-        'BAD_USER_INPUT',
-      );
-    }
-    if (ageGroupId === 99) {
-      throw new AppError(
-        'Age group "Total" (id 99) cannot be used for registration',
-        'BAD_USER_INPUT',
-      );
+    const profileRes = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}`, 'User-Agent': 'medistat-api' },
+    });
+    const profile = await profileRes.json() as { id: number; login: string; name: string | null; avatar_url: string };
+
+    const githubId = String(profile.id);
+    let user = await this.usersService.findByGithubId(githubId);
+
+    if (!user) {
+      let username = profile.login;
+      const existing = await this.usersService.findByUsername(username);
+      if (existing) {
+        username = `${username}_${githubId}`;
+      }
+      user = await this.usersService.createFromGithub(githubId, username);
     }
 
-    const existing = await this.usersService.findByUsername(username);
-    if (existing) {
-      throw new AppError('Username already taken', 'CONFLICT');
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-    const user = await this.usersService.create(
-      username,
-      passwordHash,
-      regionId,
-      genderId,
-      ageGroupId,
-    );
-
-    return { token: this.signToken(user), username: user.username };
+    return this.signToken({ ...user, username: profile.name ?? profile.login, avatarUrl: profile.avatar_url });
   }
 
-  async deleteAccount(userId: number, confirm: boolean): Promise<boolean> {
+  async deleteAccount(userId: string, confirm: boolean): Promise<boolean> {
     if (!confirm) {
       throw new AppError(
         'You must set confirm to true to delete your account',
@@ -108,19 +87,5 @@ export class AuthService {
       throw new AppError('User not found', 'NOT_FOUND');
     }
     return true;
-  }
-
-  async login(username: string, password: string): Promise<AuthPayload> {
-    const user = await this.usersService.findByUsername(username);
-    if (!user) {
-      throw new AppError('Invalid credentials', 'UNAUTHENTICATED');
-    }
-
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) {
-      throw new AppError('Invalid credentials', 'UNAUTHENTICATED');
-    }
-
-    return { token: this.signToken(user), username: user.username };
   }
 }

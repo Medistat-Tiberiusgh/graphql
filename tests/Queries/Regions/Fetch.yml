@@ -10,7 +10,7 @@ graphql:
     query: |-
       query GetRegions {
           regions {
-              regionCode
+              id
               regionName
           }
       }
@@ -30,14 +30,14 @@ runtime:
 
         test("Regions have correct structure", () => {
             const region = body.data.regions[0];
-            expect(region).to.have.property("regionCode");
+            expect(region).to.have.property("id");
             expect(region).to.have.property("regionName");
-            expect(region.regionCode).to.be.a("string");
+            expect(region.id).to.be.a("number");
             expect(region.regionName).to.be.a("string");
         });
 
         test("Regions contain known region", () => {
-            const kalmar = body.data.regions.find(r => r.regionCode === "8");
+            const kalmar = body.data.regions.find(r => r.id === 8);
             expect(kalmar.regionName).to.equal("Kalmar län");
         });
 

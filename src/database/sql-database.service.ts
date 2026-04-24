@@ -1,11 +1,11 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Pool } from 'pg';
 import { DatabaseService } from './database.service';
 
 @Injectable()
 export class SqlDatabaseService
   extends DatabaseService
-  implements OnModuleInit
+  implements OnModuleInit, OnModuleDestroy
 {
   private readonly pool = new Pool({
     host: process.env.DB_HOST,
@@ -19,6 +19,10 @@ export class SqlDatabaseService
     const client = await this.pool.connect();
     console.log('PostgreSQL connected.');
     client.release();
+  }
+
+  async onModuleDestroy() {
+    await this.pool.end();
   }
 
   async query<T = any>(sql: string, params?: unknown[]): Promise<T[]> {

@@ -9,7 +9,12 @@ graphql:
   body:
     query: |
       mutation RemoveMedication($atc: String!) {
-        removeMedication(atc: $atc)
+        removeMedication(atc: $atc) {
+          drugData {
+            atcCode
+            name
+          }
+        }
       }
     variables: |-
       {
@@ -25,7 +30,7 @@ runtime:
 
         test("Remove medication succeeds", () => {
             expect(body.errors).to.be.undefined;
-            expect(body.data.removeMedication).to.equal("N02BE01");
+            expect(body.data.removeMedication.drugData.atcCode).to.equal("N02BE01");
         });
 
 settings:

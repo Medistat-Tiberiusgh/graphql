@@ -13,7 +13,7 @@ graphql:
               items {
                   id
                   regionData {
-                      regionCode
+                      id
                       regionName
                   }
               }
@@ -40,7 +40,7 @@ runtime:
 
         test("Filtered statistics belong to correct region", () => {
             const item = body.data.statistics.items[0];
-            expect(item.regionData.regionCode).to.equal("8");
+            expect(item.regionData.id).to.equal(8);
         });
 
 settings:
