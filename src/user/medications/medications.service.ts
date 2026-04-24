@@ -78,9 +78,9 @@ export class UserMedicationsService {
     return rows[0];
   }
 
-  async remove(userId: string, atc: string): Promise<string> {
-    const rows = await this.db.query(
-      'DELETE FROM user_medications WHERE user_id = $1 AND atc = $2 RETURNING atc',
+  async remove(userId: string, atc: string): Promise<UserMedication> {
+    const rows = await this.db.query<UserMedication>(
+      'DELETE FROM user_medications WHERE user_id = $1 AND atc = $2 RETURNING atc, notes, added_at AS "addedAt"',
       [userId, atc],
     );
 
@@ -88,6 +88,6 @@ export class UserMedicationsService {
       throw new AppError('Medication not found in your list', 'NOT_FOUND');
     }
 
-    return atc;
+    return rows[0];
   }
 }

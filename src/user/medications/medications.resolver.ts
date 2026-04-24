@@ -50,11 +50,11 @@ export class UserMedicationsResolver {
     return this.service.update(user.sub, atc, notes ?? null);
   }
 
-  @Mutation(() => String)
+  @Mutation(() => UserMedication)
   removeMedication(
     @CurrentUser() user: JwtPayload,
     @Args('atc') atc: string,
-  ): Promise<string> {
+  ): Promise<UserMedication> {
     return this.service.remove(user.sub, atc);
   }
 }
