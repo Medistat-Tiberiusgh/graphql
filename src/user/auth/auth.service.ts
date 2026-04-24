@@ -75,6 +75,23 @@ export class AuthService {
     return this.signToken({ ...user, username: profile.name ?? profile.login, avatarUrl: profile.avatar_url });
   }
 
+  async ciToken(
+    providedSecret: string | undefined,
+    username: string | undefined,
+  ): Promise<string> {
+    const expected = this.configService.get<string>('CI_AUTH_SECRET');
+    if (!expected || !providedSecret || providedSecret !== expected) {
+      throw new AppError('Invalid CI credentials', 'UNAUTHENTICATED');
+    }
+    if (!username) {
+      throw new AppError('username is required', 'BAD_USER_INPUT');
+    }
+
+    const githubId = `ci:${username}`;
+    const user = await this.usersService.createFromGithub(githubId, username);
+    return this.signToken(user);
+  }
+
   async deleteAccount(userId: string, confirm: boolean): Promise<boolean> {
     if (!confirm) {
       throw new AppError(
