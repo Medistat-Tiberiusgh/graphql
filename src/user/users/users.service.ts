@@ -4,7 +4,6 @@ import { DatabaseService } from '../../database/database.service';
 export interface User {
   id: string;
   username: string;
-  password_hash: string | null;
   region_id: number | null;
   gender_id: number | null;
   age_group_id: number | null;
@@ -17,7 +16,7 @@ export class UsersService {
 
   async findByUsername(username: string): Promise<User | undefined> {
     const rows = await this.db.query<User>(
-      'SELECT id, username, password_hash, region_id, gender_id, age_group_id, github_id FROM users WHERE username = $1',
+      'SELECT id, username, region_id, gender_id, age_group_id, github_id FROM users WHERE username = $1',
       [username],
     );
     return rows[0];
@@ -25,7 +24,7 @@ export class UsersService {
 
   async findByGithubId(githubId: string): Promise<User | undefined> {
     const rows = await this.db.query<User>(
-      'SELECT id, username, password_hash, region_id, gender_id, age_group_id, github_id FROM users WHERE github_id = $1',
+      'SELECT id, username, region_id, gender_id, age_group_id, github_id FROM users WHERE github_id = $1',
       [githubId],
     );
     return rows[0];
@@ -35,7 +34,7 @@ export class UsersService {
     const rows = await this.db.query<User>(
       `INSERT INTO users (github_id, username)
        VALUES ($1, $2)
-       RETURNING id, username, password_hash, region_id, gender_id, age_group_id, github_id`,
+       RETURNING id, username, region_id, gender_id, age_group_id, github_id`,
       [githubId, username],
     );
     return rows[0];
