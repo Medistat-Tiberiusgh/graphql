@@ -12,6 +12,7 @@ import { StatisticsService } from './statistics.service';
 import { StatisticsDataLoaders } from './statistics.dataloaders';
 import { AgeGroup } from '../age-groups/age-group.model';
 import { Drug } from '../drugs/drug.model';
+import { DrugsDataLoaders } from '../drugs/drugs.dataloaders';
 import { Gender } from '../genders/gender.model';
 import { Region } from '../regions/region.model';
 
@@ -20,6 +21,7 @@ export class StatisticsResolver {
   constructor(
     private readonly statisticsService: StatisticsService,
     private readonly loaders: StatisticsDataLoaders,
+    private readonly drugLoaders: DrugsDataLoaders,
   ) {}
 
   @ResolveField(() => ID)
@@ -31,7 +33,7 @@ export class StatisticsResolver {
 
   @ResolveField(() => Drug, { nullable: true })
   async drugData(@Parent() statistic: Statistic): Promise<Drug | undefined> {
-    return this.loaders.drugByAtcCode.load(statistic.atcCode);
+    return this.drugLoaders.drugByAtcCode.load(statistic.atcCode);
   }
 
   @ResolveField(() => AgeGroup, { nullable: true })

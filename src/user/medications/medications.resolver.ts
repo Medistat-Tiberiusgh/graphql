@@ -13,7 +13,7 @@ import type { JwtPayload } from '../auth/current-user.decorator';
 import { Me, UserMedication } from './medication.model';
 import { UserMedicationsService } from './medications.service';
 import { Drug } from '../../drugs/drug.model';
-import { InsightsService } from './insights/insights.service';
+import { DrugsDataLoaders } from '../../drugs/drugs.dataloaders';
 
 @Resolver(() => Me)
 @UseGuards(JwtAuthGuard)
@@ -61,10 +61,10 @@ export class UserMedicationsResolver {
 
 @Resolver(() => UserMedication)
 export class UserMedicationResolver {
-  constructor(private readonly insightsService: InsightsService) {}
+  constructor(private readonly loaders: DrugsDataLoaders) {}
 
   @ResolveField(() => Drug, { nullable: true })
   drugData(@Parent() med: UserMedication): Promise<Drug | undefined> {
-    return this.insightsService.getDrug(med.atc);
+    return this.loaders.drugByAtcCode.load(med.atc);
   }
 }
