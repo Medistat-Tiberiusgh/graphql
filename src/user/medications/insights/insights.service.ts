@@ -131,7 +131,10 @@ export class InsightsService {
       : '';
 
     return this.db.query<GenderSplitPoint>(
-      `SELECT pd.year, g.name AS "gender", pd.per_1000 AS "per1000"
+      `SELECT pd.year,
+              pd.gender AS "genderId",
+              g.name AS "gender",
+              pd.per_1000 AS "per1000"
        FROM prescription_data pd
        JOIN genders g ON g.id = pd.gender
        WHERE pd.atc = $1
@@ -186,7 +189,8 @@ export class InsightsService {
       : `AND pd.year = (SELECT MAX(year) FROM prescription_data WHERE atc = $1 AND region = $2)`;
 
     return this.db.query<DemographicCell>(
-      `SELECT g.name  AS "gender",
+      `SELECT pd.gender AS "genderId",
+              g.name  AS "gender",
               pd.age_group AS "ageGroupId",
               ag.name AS "ageGroupName",
               pd.per_1000 AS "per1000"

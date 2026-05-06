@@ -32,6 +32,9 @@ export class GenderSplitPoint {
   @Field(() => Int)
   year!: number;
 
+  @Field(() => Int)
+  genderId!: number;
+
   @Field()
   gender!: string;
 
@@ -56,6 +59,9 @@ export class AgeSplitPoint {
 
 @ObjectType()
 export class DemographicCell {
+  @Field(() => Int)
+  genderId!: number;
+
   @Field()
   gender!: string;
 
