@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AppError } from '../common/app-error';
+import { addParam } from '../common/sql-helpers';
 import { DatabaseService } from '../database/database.service';
 import { Statistic, StatisticsConnection } from './statistics.model';
 
@@ -33,38 +34,32 @@ export class StatisticsService {
     const conditions: string[] = [];
     const params: unknown[] = [];
 
-    if (filters.year !== undefined) {
-      params.push(filters.year);
-      conditions.push(`year = $${params.length}`);
-    }
-    if (filters.region !== undefined) {
-      params.push(filters.region);
-      conditions.push(`region = $${params.length}`);
-    }
-    if (filters.atcCode !== undefined) {
-      params.push(filters.atcCode);
-      conditions.push(`atc = $${params.length}`);
-    }
-    if (filters.gender !== undefined) {
-      params.push(filters.gender);
-      conditions.push(`gender = $${params.length}`);
-    }
-    if (filters.ageGroup !== undefined) {
-      params.push(filters.ageGroup);
-      conditions.push(`age_group = $${params.length}`);
-    }
+    if (filters.year !== undefined)
+      conditions.push(`year = ${addParam(params, filters.year)}`);
+    if (filters.region !== undefined)
+      conditions.push(`region = ${addParam(params, filters.region)}`);
+    if (filters.atcCode !== undefined)
+      conditions.push(`atc = ${addParam(params, filters.atcCode)}`);
+    if (filters.gender !== undefined)
+      conditions.push(`gender = ${addParam(params, filters.gender)}`);
+    if (filters.ageGroup !== undefined)
+      conditions.push(`age_group = ${addParam(params, filters.ageGroup)}`);
 
     const where =
       conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
+    const countParams = [...params];
+    const limitPlaceholder = addParam(params, safeLimit);
+    const offsetPlaceholder = addParam(params, offset);
+
     const [items, countRows] = await Promise.all([
       this.db.query<Statistic>(
-        `${SELECT} ${where} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-        [...params, safeLimit, offset],
+        `${SELECT} ${where} LIMIT ${limitPlaceholder} OFFSET ${offsetPlaceholder}`,
+        params,
       ),
       this.db.query<{ count: string }>(
         `SELECT COUNT(*) AS count FROM prescription_data ${where}`,
-        params,
+        countParams,
       ),
     ]);
 

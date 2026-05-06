@@ -36,52 +36,27 @@ export class InsightsResolver {
   }
 
   @ResolveField(() => [RegionalStat])
-  regionalPopularity(
-    @Parent() ctx: DrugInsights,
-  ): Promise<RegionalStat[]> {
-    return this.insightsService.getRegionalPopularity(ctx.atcCode!, {
-      year: ctx.year,
-      region: ctx.region,
-      gender: ctx.gender,
-      ageGroup: ctx.ageGroup,
-    });
+  regionalPopularity(@Parent() ctx: DrugInsights): Promise<RegionalStat[]> {
+    return this.insightsService.getRegionalPopularity(ctx.atcCode!, ctx);
   }
 
   @ResolveField(() => [TrendPoint])
   trend(@Parent() ctx: DrugInsights): Promise<TrendPoint[]> {
-    return this.insightsService.getTrend(ctx.atcCode!, {
-      year: ctx.year,
-      region: ctx.region,
-      gender: ctx.gender,
-      ageGroup: ctx.ageGroup,
-    });
+    return this.insightsService.getTrend(ctx.atcCode!, ctx);
   }
 
   @ResolveField(() => [GenderSplitPoint])
   genderSplit(@Parent() ctx: DrugInsights): Promise<GenderSplitPoint[]> {
-    return this.insightsService.getGenderSplit(ctx.atcCode!, {
-      year: ctx.year,
-      region: ctx.region,
-      gender: ctx.gender,
-      ageGroup: ctx.ageGroup,
-    });
+    return this.insightsService.getGenderSplit(ctx.atcCode!, ctx);
   }
 
   @ResolveField(() => [AgeSplitPoint])
   ageSplit(@Parent() ctx: DrugInsights): Promise<AgeSplitPoint[]> {
-    return this.insightsService.getAgeSplit(ctx.atcCode!, {
-      year: ctx.year,
-      region: ctx.region,
-      gender: ctx.gender,
-      ageGroup: ctx.ageGroup,
-    });
+    return this.insightsService.getAgeSplit(ctx.atcCode!, ctx);
   }
 
   @ResolveField(() => [DemographicCell])
   demographicGrid(@Parent() ctx: DrugInsights): Promise<DemographicCell[]> {
-    return this.insightsService.getDemographicGrid(ctx.atcCode!, {
-      year: ctx.year,
-      region: ctx.region,
-    });
+    return this.insightsService.getDemographicGrid(ctx.atcCode!, ctx);
   }
 }

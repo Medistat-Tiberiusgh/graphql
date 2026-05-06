@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AppError } from '../../../common/app-error';
+import { addParam } from '../../../common/sql-helpers';
 import { DatabaseService } from '../../../database/database.service';
-import { Drug } from '../../../drugs/drug.model';
 import {
   AgeSplitPoint,
   DemographicCell,
@@ -33,37 +33,20 @@ export class InsightsService {
         .then((r) => { if (!r.length) throw new AppError(`Drug with ATC code "${atc}" not found`, 'NOT_FOUND'); }),
     ];
 
-    if (filters.region !== undefined) {
-      checks.push(
-        this.db
-          .query('SELECT 1 FROM regions WHERE id = $1', [filters.region])
-          .then((r) => { if (!r.length) throw new AppError(`Region ${filters.region} not found`, 'NOT_FOUND'); }),
-      );
-    }
-    if (filters.gender !== undefined) {
-      checks.push(
-        this.db
-          .query('SELECT 1 FROM genders WHERE id = $1', [filters.gender])
-          .then((r) => { if (!r.length) throw new AppError(`Gender ${filters.gender} not found`, 'NOT_FOUND'); }),
-      );
-    }
-    if (filters.ageGroup !== undefined) {
-      checks.push(
-        this.db
-          .query('SELECT 1 FROM age_groups WHERE id = $1', [filters.ageGroup])
-          .then((r) => { if (!r.length) throw new AppError(`Age group ${filters.ageGroup} not found`, 'NOT_FOUND'); }),
-      );
-    }
+    if (filters.region !== undefined)
+      checks.push(this.validateExists('regions', filters.region, 'Region'));
+    if (filters.gender !== undefined)
+      checks.push(this.validateExists('genders', filters.gender, 'Gender'));
+    if (filters.ageGroup !== undefined)
+      checks.push(this.validateExists('age_groups', filters.ageGroup, 'Age group'));
 
     await Promise.all(checks);
   }
 
-  async getDrug(atc: string): Promise<Drug | undefined> {
-    const rows = await this.db.query<Drug>(
-      'SELECT atc AS "atcCode", name, narcotic_class AS "narcoticClass" FROM drugs WHERE atc = $1',
-      [atc],
-    );
-    return rows[0];
+  // `table` is hardcoded by callers — never user input — so interpolation is safe here.
+  private async validateExists(table: string, id: number, label: string): Promise<void> {
+    const rows = await this.db.query(`SELECT 1 FROM ${table} WHERE id = $1`, [id]);
+    if (!rows.length) throw new AppError(`${label} ${id} not found`, 'NOT_FOUND');
   }
 
   async getRegionalPopularity(
@@ -75,7 +58,7 @@ export class InsightsService {
     const params: unknown[] = [atc, gender, ageGroup];
 
     const yearCondition = filters.year !== undefined
-      ? `pd.year = $${params.push(filters.year) && params.length}`
+      ? `pd.year = ${addParam(params, filters.year)}`
       : `pd.year = (SELECT MAX(year) FROM prescription_data WHERE atc = $1)`;
 
     return this.db.query<RegionalStat>(
@@ -99,7 +82,7 @@ export class InsightsService {
 
     const params: unknown[] = [atc, region, gender, ageGroup];
     const yearCondition = filters.year !== undefined
-      ? `AND year = $${params.push(filters.year) && params.length}`
+      ? `AND year = ${addParam(params, filters.year)}`
       : '';
 
     return this.db.query<TrendPoint>(
@@ -127,7 +110,7 @@ export class InsightsService {
     const params: unknown[] = [atc, region, ageGroup, TOTAL_GENDER];
 
     const yearCondition = filters.year !== undefined
-      ? `AND pd.year = $${params.push(filters.year) && params.length}`
+      ? `AND pd.year = ${addParam(params, filters.year)}`
       : '';
 
     return this.db.query<GenderSplitPoint>(
@@ -156,7 +139,7 @@ export class InsightsService {
     const params: unknown[] = [atc, region, gender, TOTAL_AGE_GROUP];
 
     const yearCondition = filters.year !== undefined
-      ? `AND pd.year = $${params.push(filters.year) && params.length}`
+      ? `AND pd.year = ${addParam(params, filters.year)}`
       : '';
 
     return this.db.query<AgeSplitPoint>(
@@ -185,7 +168,7 @@ export class InsightsService {
 
     // Use the requested year or fall back to the latest available year for this drug+region.
     const yearCondition = filters.year !== undefined
-      ? `AND pd.year = $${params.push(filters.year) && params.length}`
+      ? `AND pd.year = ${addParam(params, filters.year)}`
       : `AND pd.year = (SELECT MAX(year) FROM prescription_data WHERE atc = $1 AND region = $2)`;
 
     return this.db.query<DemographicCell>(
@@ -206,5 +189,4 @@ export class InsightsService {
       params,
     );
   }
-
 }
