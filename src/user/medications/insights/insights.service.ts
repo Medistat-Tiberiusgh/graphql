@@ -10,37 +10,45 @@ import {
   TrendPoint,
 } from './insights.model';
 
-export interface InsightFilters {
-  year?: number;
-  region?: number;
-  gender?: number;
-  ageGroup?: number;
-}
-
 // IDs for the pre-aggregated "total" rows in the source data
 const TOTAL_GENDER = 3;   // "Båda könen"
 const TOTAL_AGE_GROUP = 99; // "Totalt"
 const TOTAL_REGION = 0;   // "Riket"
 
+interface RegionalPopularityFilters {
+  year?: number;
+  gender?: number;
+  ageGroup?: number;
+}
+
+interface TrendFilters {
+  region?: number;
+  gender?: number;
+  ageGroup?: number;
+}
+
+interface GenderSplitFilters {
+  region?: number;
+  ageGroup?: number;
+}
+
+interface AgeSplitFilters {
+  region?: number;
+  gender?: number;
+}
+
+interface DemographicGridFilters {
+  year?: number;
+  region?: number;
+}
+
 @Injectable()
 export class InsightsService {
   constructor(private readonly db: DatabaseService) {}
 
-  async validateInputs(atc: string, filters: InsightFilters): Promise<void> {
-    const checks: Promise<unknown>[] = [
-      this.db
-        .query('SELECT 1 FROM drugs WHERE atc = $1', [atc])
-        .then((r) => { if (!r.length) throw new AppError(`Drug with ATC code "${atc}" not found`, 'NOT_FOUND'); }),
-    ];
-
-    if (filters.region !== undefined)
-      checks.push(this.validateExists('regions', filters.region, 'Region'));
-    if (filters.gender !== undefined)
-      checks.push(this.validateExists('genders', filters.gender, 'Gender'));
-    if (filters.ageGroup !== undefined)
-      checks.push(this.validateExists('age_groups', filters.ageGroup, 'Age group'));
-
-    await Promise.all(checks);
+  async validateAtc(atc: string): Promise<void> {
+    const rows = await this.db.query('SELECT 1 FROM drugs WHERE atc = $1', [atc]);
+    if (!rows.length) throw new AppError(`Drug with ATC code "${atc}" not found`, 'NOT_FOUND');
   }
 
   // `table` is hardcoded by callers — never user input — so interpolation is safe here.
@@ -49,10 +57,27 @@ export class InsightsService {
     if (!rows.length) throw new AppError(`${label} ${id} not found`, 'NOT_FOUND');
   }
 
+  private validateRegion(id?: number): Promise<void> | undefined {
+    return id === undefined ? undefined : this.validateExists('regions', id, 'Region');
+  }
+
+  private validateGender(id?: number): Promise<void> | undefined {
+    return id === undefined ? undefined : this.validateExists('genders', id, 'Gender');
+  }
+
+  private validateAgeGroup(id?: number): Promise<void> | undefined {
+    return id === undefined ? undefined : this.validateExists('age_groups', id, 'Age group');
+  }
+
   async getRegionalPopularity(
     atc: string,
-    filters: InsightFilters,
+    filters: RegionalPopularityFilters,
   ): Promise<RegionalStat[]> {
+    await Promise.all([
+      this.validateGender(filters.gender),
+      this.validateAgeGroup(filters.ageGroup),
+    ]);
+
     const gender = filters.gender ?? TOTAL_GENDER;
     const ageGroup = filters.ageGroup ?? TOTAL_AGE_GROUP;
     const params: unknown[] = [atc, gender, ageGroup];
@@ -75,15 +100,16 @@ export class InsightsService {
     );
   }
 
-  async getTrend(atc: string, filters: InsightFilters): Promise<TrendPoint[]> {
+  async getTrend(atc: string, filters: TrendFilters): Promise<TrendPoint[]> {
+    await Promise.all([
+      this.validateRegion(filters.region),
+      this.validateGender(filters.gender),
+      this.validateAgeGroup(filters.ageGroup),
+    ]);
+
     const region = filters.region ?? TOTAL_REGION;
     const gender = filters.gender ?? TOTAL_GENDER;
     const ageGroup = filters.ageGroup ?? TOTAL_AGE_GROUP;
-
-    const params: unknown[] = [atc, region, gender, ageGroup];
-    const yearCondition = filters.year !== undefined
-      ? `AND year = ${addParam(params, filters.year)}`
-      : '';
 
     return this.db.query<TrendPoint>(
       `SELECT year,
@@ -95,23 +121,22 @@ export class InsightsService {
          AND region = $2
          AND gender = $3
          AND age_group = $4
-         ${yearCondition}
        ORDER BY year`,
-      params,
+      [atc, region, gender, ageGroup],
     );
   }
 
   async getGenderSplit(
     atc: string,
-    filters: InsightFilters,
+    filters: GenderSplitFilters,
   ): Promise<GenderSplitPoint[]> {
+    await Promise.all([
+      this.validateRegion(filters.region),
+      this.validateAgeGroup(filters.ageGroup),
+    ]);
+
     const region = filters.region ?? TOTAL_REGION;
     const ageGroup = filters.ageGroup ?? TOTAL_AGE_GROUP;
-    const params: unknown[] = [atc, region, ageGroup, TOTAL_GENDER];
-
-    const yearCondition = filters.year !== undefined
-      ? `AND pd.year = ${addParam(params, filters.year)}`
-      : '';
 
     return this.db.query<GenderSplitPoint>(
       `SELECT pd.year,
@@ -124,23 +149,22 @@ export class InsightsService {
          AND pd.region = $2
          AND pd.age_group = $3
          AND pd.gender <> $4
-         ${yearCondition}
        ORDER BY pd.year, g.name`,
-      params,
+      [atc, region, ageGroup, TOTAL_GENDER],
     );
   }
 
   async getAgeSplit(
     atc: string,
-    filters: InsightFilters,
+    filters: AgeSplitFilters,
   ): Promise<AgeSplitPoint[]> {
+    await Promise.all([
+      this.validateRegion(filters.region),
+      this.validateGender(filters.gender),
+    ]);
+
     const region = filters.region ?? TOTAL_REGION;
     const gender = filters.gender ?? TOTAL_GENDER;
-    const params: unknown[] = [atc, region, gender, TOTAL_AGE_GROUP];
-
-    const yearCondition = filters.year !== undefined
-      ? `AND pd.year = ${addParam(params, filters.year)}`
-      : '';
 
     return this.db.query<AgeSplitPoint>(
       `SELECT pd.year,
@@ -153,16 +177,17 @@ export class InsightsService {
          AND pd.region = $2
          AND pd.gender = $3
          AND pd.age_group <> $4
-         ${yearCondition}
        ORDER BY pd.year, pd.age_group`,
-      params,
+      [atc, region, gender, TOTAL_AGE_GROUP],
     );
   }
 
   async getDemographicGrid(
     atc: string,
-    filters: InsightFilters,
+    filters: DemographicGridFilters,
   ): Promise<DemographicCell[]> {
+    await this.validateRegion(filters.region);
+
     const region = filters.region ?? TOTAL_REGION;
     const params: unknown[] = [atc, region];
 

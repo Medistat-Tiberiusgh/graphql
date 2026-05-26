@@ -77,28 +77,9 @@ export class DemographicCell {
 
 @ObjectType({
   description:
-    'Aggregated insights for a drug. All fields are independently resolved and filtered by the arguments passed to the drugInsights query.',
+    'Aggregated insights for a drug. Each field accepts its own filters; arguments are scoped to the dimensions the field does not enumerate.',
 })
 export class DrugInsights {
-  // Internal context fields — not exposed in the schema, used by ResolveField methods
-  atcCode?: string;
-  year?: number;
-  region?: number;
-  gender?: number;
-  ageGroup?: number;
-
-  @Field(() => [RegionalStat])
-  regionalPopularity!: RegionalStat[];
-
-  @Field(() => [TrendPoint])
-  trend!: TrendPoint[];
-
-  @Field(() => [GenderSplitPoint])
-  genderSplit!: GenderSplitPoint[];
-
-  @Field(() => [AgeSplitPoint])
-  ageSplit!: AgeSplitPoint[];
-
-  @Field(() => [DemographicCell])
-  demographicGrid!: DemographicCell[];
+  // Carries the ATC code into ResolveField methods; not exposed in the schema.
+  atcCode!: string;
 }
