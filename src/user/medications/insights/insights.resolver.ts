@@ -1,4 +1,3 @@
-import { UseGuards } from '@nestjs/common';
 import {
   Args,
   Int,
@@ -7,7 +6,6 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { JwtAuthGuard } from '../../auth/jwt.guard';
 import {
   AgeSplitPoint,
   DemographicCell,
@@ -19,7 +17,6 @@ import {
 import { InsightsService } from './insights.service';
 
 @Resolver(() => DrugInsights)
-@UseGuards(JwtAuthGuard)
 export class InsightsResolver {
   constructor(private readonly insightsService: InsightsService) {}
 
