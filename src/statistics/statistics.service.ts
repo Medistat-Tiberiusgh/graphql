@@ -34,15 +34,15 @@ export class StatisticsService {
     const conditions: string[] = [];
     const params: unknown[] = [];
 
-    if (filters.year !== undefined)
+    if (filters.year != null)
       conditions.push(`year = ${addParam(params, filters.year)}`);
-    if (filters.region !== undefined)
+    if (filters.region != null)
       conditions.push(`region = ${addParam(params, filters.region)}`);
-    if (filters.atcCode !== undefined)
+    if (filters.atcCode != null)
       conditions.push(`atc = ${addParam(params, filters.atcCode)}`);
-    if (filters.gender !== undefined)
+    if (filters.gender != null)
       conditions.push(`gender = ${addParam(params, filters.gender)}`);
-    if (filters.ageGroup !== undefined)
+    if (filters.ageGroup != null)
       conditions.push(`age_group = ${addParam(params, filters.ageGroup)}`);
 
     const where =

@@ -57,16 +57,16 @@ export class InsightsService {
     if (!rows.length) throw new AppError(`${label} ${id} not found`, 'NOT_FOUND');
   }
 
-  private validateRegion(id?: number): Promise<void> | undefined {
-    return id === undefined ? undefined : this.validateExists('regions', id, 'Region');
+  private validateRegion(id?: number | null): Promise<void> | undefined {
+    return id == null ? undefined : this.validateExists('regions', id, 'Region');
   }
 
-  private validateGender(id?: number): Promise<void> | undefined {
-    return id === undefined ? undefined : this.validateExists('genders', id, 'Gender');
+  private validateGender(id?: number | null): Promise<void> | undefined {
+    return id == null ? undefined : this.validateExists('genders', id, 'Gender');
   }
 
-  private validateAgeGroup(id?: number): Promise<void> | undefined {
-    return id === undefined ? undefined : this.validateExists('age_groups', id, 'Age group');
+  private validateAgeGroup(id?: number | null): Promise<void> | undefined {
+    return id == null ? undefined : this.validateExists('age_groups', id, 'Age group');
   }
 
   async getRegionalPopularity(
@@ -82,7 +82,7 @@ export class InsightsService {
     const ageGroup = filters.ageGroup ?? TOTAL_AGE_GROUP;
     const params: unknown[] = [atc, gender, ageGroup];
 
-    const yearCondition = filters.year !== undefined
+    const yearCondition = filters.year != null
       ? `pd.year = ${addParam(params, filters.year)}`
       : `pd.year = (SELECT MAX(year) FROM prescription_data WHERE atc = $1)`;
 
@@ -192,7 +192,7 @@ export class InsightsService {
     const params: unknown[] = [atc, region];
 
     // Use the requested year or fall back to the latest available year for this drug+region.
-    const yearCondition = filters.year !== undefined
+    const yearCondition = filters.year != null
       ? `AND pd.year = ${addParam(params, filters.year)}`
       : `AND pd.year = (SELECT MAX(year) FROM prescription_data WHERE atc = $1 AND region = $2)`;
 
