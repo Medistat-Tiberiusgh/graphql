@@ -3,39 +3,74 @@ import { DatabaseService } from '../../database/database.service';
 
 export interface User {
   id: string;
-  username: string;
+  email: string;
+  email_verified: boolean;
   region_id: number | null;
   gender_id: number | null;
   age_group_id: number | null;
-  github_id: string | null;
 }
+
+const USER_COLUMNS =
+  'id, email, email_verified, region_id, gender_id, age_group_id';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly db: DatabaseService) {}
 
-  async findByUsername(username: string): Promise<User | undefined> {
+  async findByProviderIdentity(
+    provider: string,
+    providerUid: string,
+  ): Promise<User | undefined> {
     const rows = await this.db.query<User>(
-      'SELECT id, username, region_id, gender_id, age_group_id, github_id FROM users WHERE username = $1',
-      [username],
+      `SELECT u.id, u.email, u.email_verified, u.region_id, u.gender_id, u.age_group_id
+       FROM users u
+       JOIN auth_identities ai ON ai.user_id = u.id
+       WHERE ai.provider = $1 AND ai.provider_uid = $2`,
+      [provider, providerUid],
     );
     return rows[0];
   }
 
-  async findByGithubId(githubId: string): Promise<User | undefined> {
+  async findByEmail(email: string): Promise<User | undefined> {
     const rows = await this.db.query<User>(
-      'SELECT id, username, region_id, gender_id, age_group_id, github_id FROM users WHERE github_id = $1',
-      [githubId],
+      `SELECT ${USER_COLUMNS} FROM users WHERE email = $1`,
+      [email],
     );
     return rows[0];
   }
 
-  async createFromGithub(githubId: string, username: string): Promise<User> {
+  async linkIdentity(
+    userId: string,
+    provider: string,
+    providerUid: string,
+  ): Promise<void> {
+    await this.db.query(
+      `INSERT INTO auth_identities (user_id, provider, provider_uid)
+       VALUES ($1, $2, $3)`,
+      [userId, provider, providerUid],
+    );
+  }
+
+  // Creates the user and its first identity in one atomic statement, so we
+  // never leave a user without a way to log in.
+  async createWithIdentity(params: {
+    email: string;
+    emailVerified: boolean;
+    provider: string;
+    providerUid: string;
+  }): Promise<User> {
+    const { email, emailVerified, provider, providerUid } = params;
     const rows = await this.db.query<User>(
-      `INSERT INTO users (github_id, username)
-       VALUES ($1, $2)
-       RETURNING id, username, region_id, gender_id, age_group_id, github_id`,
-      [githubId, username],
+      `WITH new_user AS (
+         INSERT INTO users (email, email_verified)
+         VALUES ($1, $2)
+         RETURNING ${USER_COLUMNS}
+       ), new_identity AS (
+         INSERT INTO auth_identities (user_id, provider, provider_uid)
+         SELECT id, $3, $4 FROM new_user
+       )
+       SELECT ${USER_COLUMNS} FROM new_user`,
+      [email, emailVerified, provider, providerUid],
     );
     return rows[0];
   }

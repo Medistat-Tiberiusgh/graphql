@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { UsersService } from '../users/users.service';
+import { UsersService, User } from '../users/users.service';
 import { AppError } from '../../common/app-error';
 
 @Injectable()
@@ -12,21 +12,51 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  private signToken(user: {
-    id: string;
-    username: string;
-    region_id: number | null;
-    gender_id: number | null;
-    age_group_id: number | null;
-    avatarUrl?: string;
-  }): string {
+  private signToken(
+    user: User,
+    displayName: string,
+    avatarUrl: string | null = null,
+  ): string {
     return this.jwtService.sign({
       sub: user.id,
-      username: user.username,
+      username: displayName,
       regionId: user.region_id,
       genderId: user.gender_id,
       ageGroupId: user.age_group_id,
-      avatarUrl: user.avatarUrl ?? null,
+      avatarUrl,
+    });
+  }
+
+  // Resolves the local user for an external login. We trust the provider's
+  // verified-email claim, so a new provider can be linked to an existing
+  // account that shares the same verified email.
+  private async resolveUser(params: {
+    provider: string;
+    providerUid: string;
+    email: string;
+    emailVerified: boolean;
+  }): Promise<User> {
+    const { provider, providerUid, email, emailVerified } = params;
+
+    const byIdentity = await this.usersService.findByProviderIdentity(
+      provider,
+      providerUid,
+    );
+    if (byIdentity) return byIdentity;
+
+    if (emailVerified) {
+      const byEmail = await this.usersService.findByEmail(email);
+      if (byEmail) {
+        await this.usersService.linkIdentity(byEmail.id, provider, providerUid);
+        return byEmail;
+      }
+    }
+
+    return this.usersService.createWithIdentity({
+      email,
+      emailVerified,
+      provider,
+      providerUid,
     });
   }
 
@@ -55,24 +85,55 @@ export class AuthService {
       throw new AppError('GitHub OAuth failed', 'UNAUTHENTICATED');
     }
 
-    const profileRes = await fetch('https://api.github.com/user', {
-      headers: { Authorization: `Bearer ${tokenData.access_token}`, 'User-Agent': 'medistat-api' },
+    const profile = await this.fetchGithubProfile(tokenData.access_token);
+    const primaryEmail = await this.fetchGithubPrimaryEmail(tokenData.access_token);
+
+    const user = await this.resolveUser({
+      provider: 'github',
+      providerUid: String(profile.id),
+      email: primaryEmail.email,
+      emailVerified: primaryEmail.verified,
     });
-    const profile = await profileRes.json() as { id: number; login: string; name: string | null; avatar_url: string };
 
-    const githubId = String(profile.id);
-    let user = await this.usersService.findByGithubId(githubId);
+    return this.signToken(user, profile.name ?? profile.login, profile.avatar_url);
+  }
 
-    if (!user) {
-      let username = profile.login;
-      const existing = await this.usersService.findByUsername(username);
-      if (existing) {
-        username = `${username}_${githubId}`;
-      }
-      user = await this.usersService.createFromGithub(githubId, username);
+  private async fetchGithubProfile(accessToken: string): Promise<{
+    id: number;
+    login: string;
+    name: string | null;
+    avatar_url: string;
+  }> {
+    const res = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': 'medistat-api' },
+    });
+    return res.json() as Promise<{
+      id: number;
+      login: string;
+      name: string | null;
+      avatar_url: string;
+    }>;
+  }
+
+  // GitHub omits a private email from /user, so the primary verified email must
+  // be read from /user/emails (requires the `user:email` OAuth scope).
+  private async fetchGithubPrimaryEmail(
+    accessToken: string,
+  ): Promise<{ email: string; verified: boolean }> {
+    const res = await fetch('https://api.github.com/user/emails', {
+      headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': 'medistat-api' },
+    });
+    const emails = await res.json() as Array<{
+      email: string;
+      primary: boolean;
+      verified: boolean;
+    }>;
+
+    const primary = emails.find((e) => e.primary);
+    if (!primary) {
+      throw new AppError('GitHub account has no primary email', 'BAD_USER_INPUT');
     }
-
-    return this.signToken({ ...user, username: profile.name ?? profile.login, avatarUrl: profile.avatar_url });
+    return { email: primary.email, verified: primary.verified };
   }
 
   async ciToken(
@@ -87,9 +148,13 @@ export class AuthService {
       throw new AppError('username is required', 'BAD_USER_INPUT');
     }
 
-    const githubId = `ci:${username}`;
-    const user = await this.usersService.createFromGithub(githubId, username);
-    return this.signToken(user);
+    const user = await this.resolveUser({
+      provider: 'ci',
+      providerUid: username,
+      email: `${username}@ci.local`,
+      emailVerified: true,
+    });
+    return this.signToken(user, username);
   }
 
   async deleteAccount(userId: string, confirm: boolean): Promise<boolean> {
