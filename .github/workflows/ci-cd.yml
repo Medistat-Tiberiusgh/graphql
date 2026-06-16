@@ -46,9 +46,75 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+  # Pre-deploy gate: run the authenticated/write flows against a throwaway
+  # Postgres seeded with the db-etl sample data — same schema + loader as prod,
+  # but disposable, so we never write test data to production.
+  integration-test:
+    name: Integration tests (seeded sample DB)
+    runs-on: ubuntu-latest
+    env:
+      # Throwaway values — only ever used by this job, never in production.
+      DB_HOST: localhost
+      DB_PORT: '5432'
+      DB_USER: medistat
+      DB_PASSWORD: medistat
+      DB_NAME: medistat
+      NODE_ENV: test
+      PORT: '3000'
+      JWT_SECRET: ci-integration-test-secret
+      CI_AUTH_SECRET: ci-integration-test-secret
+    steps:
+      - name: Checkout API
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Reuses the ETL repo's own schema.sql + loader (tracks its default branch).
+      - name: Seed a throwaway Postgres from the db-etl sample data
+        run: |
+          git clone --depth 1 https://github.com/Medistat-Tiberiusgh/db-etl.git etl
+          cd etl
+          mv sample data
+          printf 'DB_USER=%s\nDB_PASSWORD=%s\nDB_NAME=%s\nDB_PORT=%s\n' \
+            "$DB_USER" "$DB_PASSWORD" "$DB_NAME" "$DB_PORT" > .env
+          docker network create edge || true
+          docker compose up -d postgres
+          docker compose run --rm seed
+
+      - name: Install dependencies & build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install Bruno CLI
+        run: npm install -g @usebruno/cli
+
+      - name: Start API and run integration tests (auth + medications)
+        run: |
+          node dist/main > api.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS -X POST http://localhost:3000/graphql \
+                 -H 'content-type: application/json' \
+                 -d '{"query":"{ __typename }"}' >/dev/null 2>&1; then
+              ready=1; break
+            fi
+            sleep 2
+          done
+          if [ "${ready:-}" != 1 ]; then
+            echo "::error::API failed to start"; cat api.log; exit 1
+          fi
+          cd tests
+          bru run Auth Medications Cleanup \
+            --env-var baseUrl=http://localhost:3000 \
+            --env-var ciAuthSecret="$CI_AUTH_SECRET" \
+            --sandbox=developer
+
   deploy:
     name: Deploy
-    needs: build-image
+    needs: [build-image, integration-test]
     runs-on: ubuntu-latest
     steps:
       - name: Trigger deploy webhook
@@ -77,12 +143,13 @@ jobs:
           echo "Waiting 10s for container to start up..."
           sleep 10
 
-      - name: Run Bruno tests
+      # Read-only checks only: confirm production is alive and serving correct
+      # data. Authenticated/write flows are covered pre-deploy by integration-test.
+      - name: Run read-only smoke tests against production
         working-directory: tests
         run: |
-          bru run \
+          bru run Queries \
             --env-var baseUrl=https://medistat.tiberiusgh.com \
-            --env-var ciAuthSecret=${{ secrets.CI_AUTH_SECRET }} \
             --sandbox=developer
 
   rollback:

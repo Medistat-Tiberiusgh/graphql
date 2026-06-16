@@ -14,19 +14,18 @@ GraphQL
 
 ## Links and Testing
 
-|                                 | URL / File                           |
-| ------------------------------- | ------------------------------------ |
-| **Production API & Playground** | _https://cu1114.camp.lnu.se/graphql_ |
-| **API Documentation**           | _https://cu1114.camp.lnu.se/docs/_   |
-| **Bruno (test) Collection**     | `tests/`                             |
-| **Bruno Environment**           | `tests/environments/Dev.bru`         |
+|                                 | URL / File                                |
+| ------------------------------- | ----------------------------------------- |
+| **Production API & Playground** | _https://medistat.tiberiusgh.com/graphql_ |
+| **Bruno (test) Collection**     | `tests/`                                  |
+| **Bruno Environment**           | `tests/environments/Dev.yml`              |
 
 **Examiner can verify tests in one of the following ways:**
 
-1. **CI/CD pipeline** — check the pipeline output in GitLab for test results.
+1. **CI/CD pipeline** — check the GitHub Actions pipeline output for test results.
 2. **Run manually** — requires [Bruno CLI](https://docs.usebruno.com/bru-cli/overview):
    ```bash
-   npx bru run --env-file environments/Dev.bru --sandbox=developer
+   npx bru run --env-file environments/Dev.yml --sandbox=developer
    ```
    Make sure the API is running locally before executing.
 
@@ -104,9 +103,14 @@ A global error formatter is implemented as well as a catch-all. If an error is n
 
 **Docker** — Both the seed script and database are containerised. The production environment runs four containers on a shared Docker network: the API, PostgreSQL + seed script, a Caddy reverse proxy (handling TLS certificate renewal via LNU's infrastructure), and a webhook listener that triggers redeployment when the CI/CD pipeline pushes a new image.
 
-**GitLab CI/CD** — On every push to main, the pipeline builds a Docker image with Kaniko, pushes it to the GitLab Container Registry tagged with the commit SHA and latest, then sends a webhook to the server to pull and restart the updated container.
+**GitHub Actions CI/CD** — On every push to main the pipeline: (1) builds a Docker image and pushes it to GHCR tagged with the commit SHA and `latest`; (2) in parallel, runs the integration suite against a throwaway sample-seeded Postgres. Only if both succeed does it (3) trigger a deploy webhook so the server pulls and restarts the new container, then (4) run the read-only smoke tests against production — rolling back automatically if they fail.
 
-**Tests** — API tests are written as a Bruno collection (`tests/`) and run via the Bruno CLI. Bruno was chosen over Postman because Postman does not support exporting GraphQL collections as plain files, which makes version control and CI integration impractical. The collection covers auth, medications, all reference data queries, and a cleanup step that deletes the test user after each run, making the suite safe to run against the production API.
+**Tests** — API tests are a Bruno collection (`tests/`) run via the Bruno CLI, split into two tiers by purpose:
+
+- **Pre-deploy integration tests** (`Auth`, `Medications`, `Cleanup`) run in CI against a disposable Postgres seeded from the [db-etl](https://github.com/Medistat-Tiberiusgh/db-etl) sample dataset — the _same_ schema and loader as production, so the authenticated/write logic is verified against a real database without ever writing test data to prod. These gate the deploy.
+- **Post-deploy smoke tests** (`Queries`, read-only) run against the live production API to confirm the deployment is healthy and serving correct data; a failure triggers automatic rollback.
+
+Production sign-in is OAuth-only. The `ciToken` mutation that lets the integration suite mint a JWT without a real OIDC round-trip is disabled when `NODE_ENV=prod`, so it can never be an auth backdoor. Bruno was chosen over Postman because Postman cannot export GraphQL collections as plain files, which makes version control and CI integration impractical.
 
 ## Reflection
 

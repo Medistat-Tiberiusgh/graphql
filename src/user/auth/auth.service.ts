@@ -68,25 +68,36 @@ export class AuthService {
     const clientId = this.configService.get<string>('GITHUB_CLIENT_ID');
     const clientSecret = this.configService.get<string>('GITHUB_CLIENT_SECRET');
 
-    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code,
-        code_verifier: codeVerifier,
-        redirect_uri: redirectUri,
-      }),
-    });
-    const tokenData = await tokenRes.json() as { access_token?: string; error?: string };
+    const tokenRes = await fetch(
+      'https://github.com/login/oauth/access_token',
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: clientId,
+          client_secret: clientSecret,
+          code,
+          code_verifier: codeVerifier,
+          redirect_uri: redirectUri,
+        }),
+      },
+    );
+    const tokenData = (await tokenRes.json()) as {
+      access_token?: string;
+      error?: string;
+    };
 
     if (!tokenData.access_token) {
       throw new AppError('GitHub OAuth failed', 'UNAUTHENTICATED');
     }
 
     const profile = await this.fetchGithubProfile(tokenData.access_token);
-    const primaryEmail = await this.fetchGithubPrimaryEmail(tokenData.access_token);
+    const primaryEmail = await this.fetchGithubPrimaryEmail(
+      tokenData.access_token,
+    );
 
     const user = await this.resolveUser({
       provider: 'github',
@@ -95,7 +106,11 @@ export class AuthService {
       emailVerified: primaryEmail.verified,
     });
 
-    return this.signToken(user, profile.name ?? profile.login, profile.avatar_url);
+    return this.signToken(
+      user,
+      profile.name ?? profile.login,
+      profile.avatar_url,
+    );
   }
 
   private async fetchGithubProfile(accessToken: string): Promise<{
@@ -105,7 +120,10 @@ export class AuthService {
     avatar_url: string;
   }> {
     const res = await fetch('https://api.github.com/user', {
-      headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': 'medistat-api' },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'User-Agent': 'medistat-api',
+      },
     });
     return res.json() as Promise<{
       id: number;
@@ -121,9 +139,12 @@ export class AuthService {
     accessToken: string,
   ): Promise<{ email: string; verified: boolean }> {
     const res = await fetch('https://api.github.com/user/emails', {
-      headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': 'medistat-api' },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'User-Agent': 'medistat-api',
+      },
     });
-    const emails = await res.json() as Array<{
+    const emails = (await res.json()) as Array<{
       email: string;
       primary: boolean;
       verified: boolean;
@@ -131,15 +152,25 @@ export class AuthService {
 
     const primary = emails.find((e) => e.primary);
     if (!primary) {
-      throw new AppError('GitHub account has no primary email', 'BAD_USER_INPUT');
+      throw new AppError(
+        'GitHub account has no primary email',
+        'BAD_USER_INPUT',
+      );
     }
     return { email: primary.email, verified: primary.verified };
   }
 
+  // Test-only auth seam: lets the CI integration suite obtain a JWT without a real OIDC round-trip. Disabled in production so it can never be a backdoor — real sign-in there is OAuth-only.
   async ciToken(
     providedSecret: string | undefined,
     username: string | undefined,
   ): Promise<string> {
+    if (this.configService.get<string>('NODE_ENV') === 'prod') {
+      throw new AppError(
+        'CI token issuance is disabled in production',
+        'FORBIDDEN',
+      );
+    }
     const expected = this.configService.get<string>('CI_AUTH_SECRET');
     if (!expected || !providedSecret || providedSecret !== expected) {
       throw new AppError('Invalid CI credentials', 'UNAUTHENTICATED');
