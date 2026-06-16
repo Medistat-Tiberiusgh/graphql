@@ -1,6 +1,15 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
 import { DatabaseService } from './database.service';
+
+// pg returns NUMERIC/DECIMAL as strings by default, since they can exceed JS
+// double precision. Our only NUMERIC column is per_1000 NUMERIC(10,2), which is
+// well within a double, so parse it to a real number — keeps the `number` types
+// honest and avoids string-vs-number bugs in any future arithmetic.
+const NUMERIC_OID = 1700;
+types.setTypeParser(NUMERIC_OID, (value) =>
+  value === null ? null : parseFloat(value),
+);
 
 @Injectable()
 export class SqlDatabaseService
