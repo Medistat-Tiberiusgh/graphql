@@ -8,10 +8,9 @@ graphql:
   url: "{{baseUrl}}/graphql"
   body:
     query: |
-      mutation AddMedication($atc: String!, $notes: String) {
-        addMedication(atc: $atc, notes: $notes) {
+      mutation AddMedication($atc: String!) {
+        addMedication(atc: $atc) {
           addedAt
-          notes
           drugData {
             atcCode
             name
@@ -20,8 +19,7 @@ graphql:
       }
     variables: |-
       {
-        "atc": "N02BE01",
-        "notes": "Test note"
+        "atc": "N02BE01"
       }
 
 runtime:

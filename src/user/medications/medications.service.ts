@@ -9,23 +9,12 @@ export class UserMedicationsService {
 
   async findAllForUser(userId: string): Promise<UserMedication[]> {
     return this.db.query<UserMedication>(
-      'SELECT atc, notes, added_at AS "addedAt" FROM user_medications WHERE user_id = $1 ORDER BY added_at DESC',
+      'SELECT atc, added_at AS "addedAt" FROM user_medications WHERE user_id = $1 ORDER BY added_at DESC',
       [userId],
     );
   }
 
-  async add(
-    userId: string,
-    atc: string,
-    notes?: string,
-  ): Promise<UserMedication> {
-    if (notes && notes.length > 1000) {
-      throw new AppError(
-        'Notes must not exceed 1000 characters',
-        'BAD_USER_INPUT',
-      );
-    }
-
+  async add(userId: string, atc: string): Promise<UserMedication> {
     const drug = await this.db.query('SELECT atc FROM drugs WHERE atc = $1', [
       atc,
     ]);
@@ -34,11 +23,11 @@ export class UserMedicationsService {
     }
 
     const rows = await this.db.query<UserMedication>(
-      `INSERT INTO user_medications (user_id, atc, notes)
-       VALUES ($1, $2, $3)
+      `INSERT INTO user_medications (user_id, atc)
+       VALUES ($1, $2)
        ON CONFLICT (user_id, atc) DO NOTHING
-       RETURNING atc, notes, added_at AS "addedAt"`,
-      [userId, atc, notes ?? null],
+       RETURNING atc, added_at AS "addedAt"`,
+      [userId, atc],
     );
 
     if (!rows.length) {
@@ -51,36 +40,9 @@ export class UserMedicationsService {
     return rows[0];
   }
 
-  async update(
-    userId: string,
-    atc: string,
-    notes: string | null,
-  ): Promise<UserMedication> {
-    if (notes && notes.length > 1000) {
-      throw new AppError(
-        'Notes must not exceed 1000 characters',
-        'BAD_USER_INPUT',
-      );
-    }
-
-    const rows = await this.db.query<UserMedication>(
-      `UPDATE user_medications
-       SET notes = $3
-       WHERE user_id = $1 AND atc = $2
-       RETURNING atc, notes, added_at AS "addedAt"`,
-      [userId, atc, notes],
-    );
-
-    if (!rows.length) {
-      throw new AppError('Medication not found in your list', 'NOT_FOUND');
-    }
-
-    return rows[0];
-  }
-
   async remove(userId: string, atc: string): Promise<UserMedication> {
     const rows = await this.db.query<UserMedication>(
-      'DELETE FROM user_medications WHERE user_id = $1 AND atc = $2 RETURNING atc, notes, added_at AS "addedAt"',
+      'DELETE FROM user_medications WHERE user_id = $1 AND atc = $2 RETURNING atc, added_at AS "addedAt"',
       [userId, atc],
     );
 

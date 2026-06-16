@@ -5,9 +5,6 @@ import { Drug } from '../../drugs/drug.model';
 export class UserMedication {
   atc: string;
 
-  @Field({ nullable: true })
-  notes?: string;
-
   @Field()
   addedAt!: Date;
 

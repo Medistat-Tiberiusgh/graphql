@@ -8,10 +8,9 @@ graphql:
   url: '{{baseUrl}}/graphql'
   body:
     query: |
-      mutation AddMedication($atc: String!, $notes: String) {
-        addMedication(atc: $atc, notes: $notes) {
+      mutation AddMedication($atc: String!) {
+        addMedication(atc: $atc) {
           addedAt
-          notes
           drugData {
             atcCode
             name
@@ -20,8 +19,7 @@ graphql:
       }
     variables: |-
       {
-        "atc": "N02BE01",
-        "notes": "Test note"
+        "atc": "N02BE01"
       }
   auth: inherit
 
@@ -38,7 +36,6 @@ runtime:
         test("Add medication succeeds", () => {
             expect(body.errors).to.be.undefined;
             expect(body.data.addMedication).to.have.property("addedAt");
-            expect(body.data.addMedication.notes).to.equal("Test note");
         });
 
         test("Added medication has correct drug data", () => {

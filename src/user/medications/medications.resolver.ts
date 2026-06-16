@@ -36,18 +36,8 @@ export class UserMedicationsResolver {
   addMedication(
     @CurrentUser() user: JwtPayload,
     @Args('atc') atc: string,
-    @Args('notes', { nullable: true }) notes?: string,
   ): Promise<UserMedication> {
-    return this.service.add(user.sub, atc, notes);
-  }
-
-  @Mutation(() => UserMedication)
-  updateMedication(
-    @CurrentUser() user: JwtPayload,
-    @Args('atc') atc: string,
-    @Args('notes', { nullable: true }) notes?: string,
-  ): Promise<UserMedication> {
-    return this.service.update(user.sub, atc, notes ?? null);
+    return this.service.add(user.sub, atc);
   }
 
   @Mutation(() => UserMedication)

@@ -11,7 +11,6 @@ graphql:
       query GetMe {
         me {
           medications {
-            notes
             addedAt
             drugData {
               atcCode
@@ -36,7 +35,6 @@ runtime:
 
         test("Medication has correct structure", () => {
             expect(med).to.have.property("addedAt");
-            expect(med).to.have.property("notes");
             expect(med.drugData).to.have.property("atcCode");
         });
 
