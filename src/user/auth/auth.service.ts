@@ -180,8 +180,10 @@ export class AuthService {
     }
 
     const user = await this.resolveUser({
-      provider: 'ci',
-      providerUid: username,
+      // Keep CI identities in the existing GitHub provider namespace so this
+      // seam works against the seeded production-like schema used in CI.
+      provider: 'github',
+      providerUid: `ci:${username}`,
       email: `${username}@ci.local`,
       emailVerified: true,
     });
