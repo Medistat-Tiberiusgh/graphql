@@ -21,9 +21,7 @@ export class InsightsResolver {
   constructor(private readonly insightsService: InsightsService) {}
 
   @Query(() => DrugInsights)
-  async drugInsights(
-    @Args('atcCode') atcCode: string,
-  ): Promise<DrugInsights> {
+  async drugInsights(@Args('atcCode') atcCode: string): Promise<DrugInsights> {
     await this.insightsService.validateAtc(atcCode);
     return { atcCode };
   }
