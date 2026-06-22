@@ -7,7 +7,11 @@ import {
   Resolver,
   Parent,
 } from '@nestjs/graphql';
-import { Statistic, StatisticsConnection } from './statistics.model';
+import {
+  DataYearRange,
+  Statistic,
+  StatisticsConnection,
+} from './statistics.model';
 import { StatisticsService } from './statistics.service';
 import { StatisticsDataLoaders } from './statistics.dataloaders';
 import { AgeGroup } from '../age-groups/age-group.model';
@@ -74,6 +78,11 @@ export class StatisticsResolver {
       gender,
       ageGroup,
     });
+  }
+
+  @Query(() => DataYearRange)
+  async dataYearRange(): Promise<DataYearRange> {
+    return this.statisticsService.dataYearRange();
   }
 
   @Query(() => Statistic, { nullable: true })

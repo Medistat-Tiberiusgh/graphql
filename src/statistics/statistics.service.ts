@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { AppError } from '../common/app-error';
 import { addParam } from '../common/sql-helpers';
 import { DatabaseService } from '../database/database.service';
-import { Statistic, StatisticsConnection } from './statistics.model';
+import {
+  DataYearRange,
+  Statistic,
+  StatisticsConnection,
+} from './statistics.model';
 
 const SELECT = `
   SELECT year, region, atc AS "atcCode", gender,
@@ -70,6 +74,12 @@ export class StatisticsService {
       hasNextPage: offset + safeLimit < totalCount,
       hasPreviousPage: offset > 0,
     };
+  }
+
+  async dataYearRange(): Promise<DataYearRange> {
+    const sql = `SELECT MIN(year) AS earliest, MAX(year) AS latest FROM prescription_data`;
+    const rows = await this.db.query<DataYearRange>(sql);
+    return rows[0];
   }
 
   async findOne(
