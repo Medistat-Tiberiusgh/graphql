@@ -5,6 +5,15 @@ import { Gender } from '../genders/gender.model';
 import { Region } from '../regions/region.model';
 
 @ObjectType()
+export class DataYearRange {
+  @Field(() => Int)
+  earliest: number;
+
+  @Field(() => Int)
+  latest: number;
+}
+
+@ObjectType()
 export class StatisticsConnection {
   @Field(() => [Statistic])
   items: Statistic[];

@@ -240,7 +240,7 @@ export class InsightsService {
     // Use the requested year or fall back to the latest available year for this drug+region.
     const yearExpression =
       filters.year != null
-        ? addParam(params, filters.year)
+        ? `${addParam(params, filters.year)}::int`
         : `(SELECT MAX(year) FROM prescription_data WHERE atc = $1 AND region = $2)`;
 
     // Sparse data, so build the full gender × age grid for the year and LEFT JOIN, filling gaps with 0.

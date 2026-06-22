@@ -1,0 +1,46 @@
+info:
+  name: Year Range
+  type: graphql
+  seq: 4
+
+graphql:
+  method: POST
+  url: "{{baseUrl}}/graphql"
+  body:
+    query: |-
+      query GetDataYearRange {
+          dataYearRange {
+              earliest
+              latest
+          }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+
+        test("Get data year range succeeds", () => {
+            expect(body.errors).to.be.undefined;
+            expect(body.data.dataYearRange).to.be.an("object");
+        });
+
+        test("Year range has correct structure", () => {
+            const range = body.data.dataYearRange;
+            expect(range.earliest).to.be.a("number");
+            expect(range.latest).to.be.a("number");
+        });
+
+        test("Range starts in 2006 and ends no earlier", () => {
+            const range = body.data.dataYearRange;
+            expect(range.earliest).to.equal(2006);
+            expect(range.latest).to.be.at.least(range.earliest);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
