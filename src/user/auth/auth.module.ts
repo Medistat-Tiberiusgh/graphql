@@ -6,6 +6,8 @@ import { AuthService } from './auth.service';
 import { AuthResolver } from './auth.resolver';
 import { JwtAuthGuard } from './jwt.guard';
 import { OAuthController } from './oauth.controller';
+import { GithubProvider } from './providers/github.provider';
+import { GoogleProvider } from './providers/google.provider';
 
 @Module({
   imports: [
@@ -20,7 +22,13 @@ import { OAuthController } from './oauth.controller';
     }),
   ],
   controllers: [OAuthController],
-  providers: [AuthService, AuthResolver, JwtAuthGuard],
+  providers: [
+    AuthService,
+    AuthResolver,
+    JwtAuthGuard,
+    GithubProvider,
+    GoogleProvider,
+  ],
   exports: [JwtModule, JwtAuthGuard],
 })
 export class AuthModule {}
