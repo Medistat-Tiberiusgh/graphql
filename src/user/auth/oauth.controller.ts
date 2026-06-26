@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Param, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AppError } from '../../common/app-error';
 
@@ -12,8 +12,11 @@ interface ExchangeBody {
 export class OAuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('github/exchange')
-  async githubExchange(@Body() body: ExchangeBody): Promise<{ token: string }> {
+  @Post(':provider/exchange')
+  async exchange(
+    @Param('provider') provider: string,
+    @Body() body: ExchangeBody,
+  ): Promise<{ token: string }> {
     const { code, codeVerifier, redirectUri } = body;
     if (!code || !codeVerifier || !redirectUri) {
       throw new AppError(
@@ -21,7 +24,8 @@ export class OAuthController {
         'BAD_USER_INPUT',
       );
     }
-    const token = await this.authService.githubCallback(
+    const token = await this.authService.oauthCallback(
+      provider,
       code,
       codeVerifier,
       redirectUri,
