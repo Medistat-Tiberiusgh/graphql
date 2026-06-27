@@ -46,21 +46,29 @@ export class AuthService {
       email: identity.email,
       emailVerified: identity.emailVerified,
     });
-    return this.signToken(user, identity.displayName, identity.avatarUrl);
+    return this.signToken(
+      user,
+      identity.displayName,
+      identity.avatarUrl,
+      provider.name,
+    );
   }
 
   private signToken(
     user: User,
     displayName: string,
-    avatarUrl: string | null = null,
+    avatarUrl: string | null,
+    provider: string,
   ): string {
     return this.jwtService.sign({
       sub: user.id,
       username: displayName,
+      email: user.email,
       regionId: user.region_id,
       genderId: user.gender_id,
       ageGroupId: user.age_group_id,
       avatarUrl,
+      provider,
     });
   }
 
@@ -120,7 +128,7 @@ export class AuthService {
       email: `${username}@ci.local`,
       emailVerified: true,
     });
-    return this.signToken(user, username);
+    return this.signToken(user, username, null, 'ci');
   }
 
   async deleteAccount(userId: string, confirm: boolean): Promise<boolean> {
