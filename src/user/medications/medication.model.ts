@@ -11,11 +11,3 @@ export class UserMedication {
   @Field(() => Drug, { nullable: true })
   drugData?: Drug;
 }
-
-@ObjectType()
-export class Me {
-  userId!: string;
-
-  @Field(() => [UserMedication])
-  medications!: UserMedication[];
-}

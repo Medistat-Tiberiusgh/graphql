@@ -7,6 +7,13 @@ import { OAuthProvider } from './providers/oauth-provider.interface';
 import { GithubProvider } from './providers/github.provider';
 import { GoogleProvider } from './providers/google.provider';
 
+type LoginIdentity = {
+  provider: string;
+  providerUid: string;
+  email: string;
+  emailVerified: boolean;
+};
+
 @Injectable()
 export class AuthService {
   private readonly providers: Map<string, OAuthProvider>;
@@ -31,14 +38,7 @@ export class AuthService {
     codeVerifier: string,
     redirectUri: string,
   ): Promise<string> {
-    const provider = this.providers.get(providerName);
-    if (!provider) {
-      throw new AppError(
-        `Unknown auth provider: ${providerName}`,
-        'BAD_USER_INPUT',
-      );
-    }
-
+    const provider = this.requireProvider(providerName);
     const identity = await provider.exchangeCode(code, codeVerifier, redirectUri);
     const user = await this.resolveUser({
       provider: provider.name,
@@ -46,61 +46,91 @@ export class AuthService {
       email: identity.email,
       emailVerified: identity.emailVerified,
     });
-    return this.signToken(
-      user,
-      identity.displayName,
-      identity.avatarUrl,
-      provider.name,
+    return this.signToken(user, identity.displayName, identity.avatarUrl);
+  }
+
+  async linkProvider(
+    userId: string,
+    providerName: string,
+    code: string,
+    codeVerifier: string,
+    redirectUri: string,
+  ): Promise<void> {
+    const provider = this.requireProvider(providerName);
+    const identity = await provider.exchangeCode(code, codeVerifier, redirectUri);
+    await this.attachIdentityToUser(userId, provider.name, identity.providerUid);
+  }
+
+  private async attachIdentityToUser(
+    userId: string,
+    provider: string,
+    providerUid: string,
+  ): Promise<void> {
+    const owner = await this.usersService.findByProviderIdentity(
+      provider,
+      providerUid,
     );
+    if (!owner) {
+      await this.usersService.linkIdentity(userId, provider, providerUid);
+      return;
+    }
+    if (owner.id === userId) return;
+    await this.usersService.mergeAccounts(userId, owner.id);
+  }
+
+  private requireProvider(providerName: string): OAuthProvider {
+    const provider = this.providers.get(providerName);
+    if (!provider) {
+      throw new AppError(
+        `Unknown auth provider: ${providerName}`,
+        'BAD_USER_INPUT',
+      );
+    }
+    return provider;
   }
 
   private signToken(
     user: User,
     displayName: string,
     avatarUrl: string | null,
-    provider: string,
   ): string {
     return this.jwtService.sign({
       sub: user.id,
       username: displayName,
       email: user.email,
-      regionId: user.region_id,
-      genderId: user.gender_id,
-      ageGroupId: user.age_group_id,
       avatarUrl,
-      provider,
     });
   }
 
-  // Resolves the local user for an external login. We trust the provider's verified-email claim, so a new provider can be linked to an existing account that shares the same verified email.
-  private async resolveUser(params: {
-    provider: string;
-    providerUid: string;
-    email: string;
-    emailVerified: boolean;
-  }): Promise<User> {
-    const { provider, providerUid, email, emailVerified } = params;
-
-    const byIdentity = await this.usersService.findByProviderIdentity(
-      provider,
-      providerUid,
+  private async resolveUser(identity: LoginIdentity): Promise<User> {
+    const linkedToIdentity = await this.usersService.findByProviderIdentity(
+      identity.provider,
+      identity.providerUid,
     );
-    if (byIdentity) return byIdentity;
+    if (linkedToIdentity) return linkedToIdentity;
 
-    if (emailVerified) {
-      const byEmail = await this.usersService.findByEmail(email);
-      if (byEmail) {
-        await this.usersService.linkIdentity(byEmail.id, provider, providerUid);
-        return byEmail;
-      }
-    }
+    const linkedByEmail = await this.linkToExistingAccount(identity);
+    if (linkedByEmail) return linkedByEmail;
 
-    return this.usersService.createWithIdentity({
-      email,
-      emailVerified,
-      provider,
-      providerUid,
-    });
+    return this.usersService.createWithIdentity(identity);
+  }
+
+  // We trust the provider's verified-email claim, so a login can adopt an
+  // existing account that shares the same verified email.
+  private async linkToExistingAccount(
+    identity: LoginIdentity,
+  ): Promise<User | undefined> {
+    if (!identity.emailVerified) return undefined;
+
+    const account = await this.usersService.findByEmail(identity.email);
+    if (!account) return undefined;
+
+    await this.usersService.linkIdentity(
+      account.id,
+      identity.provider,
+      identity.providerUid,
+    );
+    return account;
   }
 
   // Test-only auth seam: lets the CI integration suite obtain a JWT without a real OIDC round-trip. Disabled in production so it can never be a backdoor — real sign-in there is OAuth-only.
@@ -128,7 +158,7 @@ export class AuthService {
       email: `${username}@ci.local`,
       emailVerified: true,
     });
-    return this.signToken(user, username, null, 'ci');
+    return this.signToken(user, username, null);
   }
 
   async deleteAccount(userId: string, confirm: boolean): Promise<boolean> {

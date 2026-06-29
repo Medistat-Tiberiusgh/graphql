@@ -27,6 +27,25 @@ export class AuthResolver {
     return this.authService.deleteAccount(user.sub, confirm);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Mutation(() => Boolean)
+  async linkProvider(
+    @CurrentUser() user: JwtPayload,
+    @Args('provider') provider: string,
+    @Args('code') code: string,
+    @Args('codeVerifier') codeVerifier: string,
+    @Args('redirectUri') redirectUri: string,
+  ): Promise<boolean> {
+    await this.authService.linkProvider(
+      user.sub,
+      provider,
+      code,
+      codeVerifier,
+      redirectUri,
+    );
+    return true;
+  }
+
   @Mutation(() => AuthPayload)
   async ciToken(
     @Args('secret') secret: string,
