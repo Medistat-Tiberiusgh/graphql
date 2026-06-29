@@ -11,6 +11,7 @@ import { AgeGroupsModule } from './age-groups/age-groups.module';
 import { GendersModule } from './genders/genders.module';
 import { AuthModule } from './user/auth/auth.module';
 import { UserMedicationsModule } from './user/medications/medications.module';
+import { MeModule } from './user/me/me.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { UserMedicationsModule } from './user/medications/medications.module';
     AgeGroupsModule,
     GendersModule,
     UserMedicationsModule,
+    MeModule,
   ],
 })
 export class AppModule {}
