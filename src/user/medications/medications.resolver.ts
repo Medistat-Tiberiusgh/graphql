@@ -2,7 +2,6 @@ import {
   Args,
   Mutation,
   Parent,
-  Query,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
@@ -10,7 +9,8 @@ import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/current-user.decorator';
-import { Me, UserMedication } from './medication.model';
+import { Me } from '../me/me.model';
+import { UserMedication } from './medication.model';
 import { UserMedicationsService } from './medications.service';
 import { Drug } from '../../drugs/drug.model';
 import { DrugsDataLoaders } from '../../drugs/drugs.dataloaders';
@@ -19,13 +19,6 @@ import { DrugsDataLoaders } from '../../drugs/drugs.dataloaders';
 @UseGuards(JwtAuthGuard)
 export class UserMedicationsResolver {
   constructor(private readonly service: UserMedicationsService) {}
-
-  @Query(() => Me)
-  me(@CurrentUser() user: JwtPayload): Me {
-    const result = new Me();
-    result.userId = user.sub;
-    return result;
-  }
 
   @ResolveField(() => [UserMedication])
   medications(@Parent() parent: Me): Promise<UserMedication[]> {

@@ -38,4 +38,22 @@ export class SqlDatabaseService
     const result = await this.pool.query(sql, params);
     return result.rows;
   }
+
+  async runInTransaction(
+    steps: { sql: string; params?: unknown[] }[],
+  ): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      for (const step of steps) {
+        await client.query(step.sql, step.params);
+      }
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 }

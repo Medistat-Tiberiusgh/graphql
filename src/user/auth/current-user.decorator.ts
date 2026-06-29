@@ -5,11 +5,7 @@ export interface JwtPayload {
   sub: string;
   username: string;
   email: string;
-  regionId: number | null;
-  genderId: number | null;
-  ageGroupId: number | null;
   avatarUrl: string | null;
-  provider: string | null;
 }
 
 export const CurrentUser = createParamDecorator(
