@@ -1,0 +1,86 @@
+import { Field, Float, Int, ObjectType } from '@nestjs/graphql';
+import { Drug } from '../drugs/drug.model';
+
+export interface DemographicGroup {
+  region: number;
+  gender: number;
+  ageGroup: number;
+}
+
+@ObjectType({
+  description: 'A demographic group; null means "all" for that dimension',
+})
+export class ComparisonGroup {
+  @Field(() => Int, { nullable: true })
+  regionId!: number | null;
+
+  @Field(() => Int, { nullable: true })
+  genderId!: number | null;
+
+  @Field(() => Int, { nullable: true })
+  ageGroupId!: number | null;
+}
+
+@ObjectType()
+export class ForYou {
+  group!: DemographicGroup;
+  baseline!: DemographicGroup;
+
+  @Field(() => ComparisonGroup, {
+    description: 'The group every ratio in standsOut is measured against',
+  })
+  comparedWith!: ComparisonGroup;
+
+  @Field(() => Int)
+  latestYear!: number;
+
+  @Field(() => Int)
+  trendStartYear!: number;
+}
+
+@ObjectType()
+export class StandsOutItem {
+  @Field(() => Drug)
+  drug!: Drug;
+
+  @Field(() => Float, {
+    description: 'How many times more common in the group than in the baseline',
+  })
+  ratio!: number;
+
+  @Field(() => Float)
+  per1000!: number;
+}
+
+@ObjectType()
+export class MostDispensedItem {
+  @Field(() => Drug)
+  drug!: Drug;
+
+  @Field(() => Float)
+  per1000!: number;
+}
+
+@ObjectType()
+export class YearRate {
+  @Field(() => Int)
+  year!: number;
+
+  @Field(() => Float)
+  per1000!: number;
+}
+
+@ObjectType()
+export class RisingItem {
+  @Field(() => Drug)
+  drug!: Drug;
+
+  @Field(() => Float, {
+    description:
+      'Rate in the latest year divided by the rate in trendStartYear',
+  })
+  growth!: number;
+
+  @Field(() => [YearRate])
+  trend!: YearRate[];
+}
