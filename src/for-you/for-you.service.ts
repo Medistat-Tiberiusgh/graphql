@@ -4,10 +4,12 @@ import {
   TOTAL_AGE_GROUP,
   TOTAL_GENDER,
   TOTAL_REGION,
+  assertDimensionExists,
 } from '../common/demographics';
 import { DatabaseService } from '../database/database.service';
 import { Drug } from '../drugs/drug.model';
 import {
+  Changes,
   ComparisonGroup,
   ComparisonItem,
   DemographicGroup,
@@ -19,7 +21,7 @@ import {
 // Small groups and rare drugs give unstable rates, so both floors must pass.
 const MIN_PATIENTS = 50;
 const MIN_PER_1000 = 2;
-const TREND_YEARS = 5;
+const ALLOWED_CHANGE_YEARS = [3, 5, 10];
 const MAX_LIMIT = 20;
 
 interface DrugRow {
@@ -60,17 +62,11 @@ function hasDemographics(demographics: SavedDemographics): boolean {
   );
 }
 
-// With a region, compare against the same gender/age in all of Sweden so the
-// result shows what is special about the region; otherwise against everyone.
-function baselineFor(group: DemographicGroup): DemographicGroup {
-  if (group.region !== TOTAL_REGION) {
-    return { ...group, region: TOTAL_REGION };
-  }
-  return {
-    region: TOTAL_REGION,
-    gender: TOTAL_GENDER,
-    ageGroup: TOTAL_AGE_GROUP,
-  };
+// Only a region gives a fair comparison: the same gender/age in all of Sweden.
+// Without one, any baseline mostly measures age or gender, so there is none.
+function baselineFor(group: DemographicGroup): DemographicGroup | null {
+  if (group.region === TOTAL_REGION) return null;
+  return { ...group, region: TOTAL_REGION };
 }
 
 function toComparisonGroup(group: DemographicGroup): ComparisonGroup {
@@ -94,6 +90,32 @@ function assertValidLimit(limit: number): void {
 export class ForYouService {
   constructor(private readonly db: DatabaseService) {}
 
+  // An explored group comes from the client, so every ID is checked first;
+  // saved demographics were already checked when the profile was saved.
+  async forExploredGroup(
+    demographics: SavedDemographics,
+  ): Promise<ForYou | null> {
+    await assertDimensionExists(
+      this.db,
+      'region',
+      demographics.regionId,
+      'BAD_USER_INPUT',
+    );
+    await assertDimensionExists(
+      this.db,
+      'gender',
+      demographics.genderId,
+      'BAD_USER_INPUT',
+    );
+    await assertDimensionExists(
+      this.db,
+      'ageGroup',
+      demographics.ageGroupId,
+      'BAD_USER_INPUT',
+    );
+    return this.forDemographics(demographics);
+  }
+
   async forDemographics(
     demographics: SavedDemographics,
   ): Promise<ForYou | null> {
@@ -105,9 +127,22 @@ export class ForYouService {
     return {
       group,
       baseline,
-      comparedWith: toComparisonGroup(baseline),
+      comparedWith: baseline && toComparisonGroup(baseline),
       latestYear,
-      trendStartYear: latestYear - TREND_YEARS,
+    };
+  }
+
+  changesOver(forYou: ForYou, years: number): Changes {
+    if (!ALLOWED_CHANGE_YEARS.includes(years)) {
+      throw new AppError(
+        `years must be one of ${ALLOWED_CHANGE_YEARS.join(', ')}`,
+        'BAD_USER_INPUT',
+      );
+    }
+    return {
+      group: forYou.group,
+      latestYear: forYou.latestYear,
+      startYear: forYou.latestYear - years,
     };
   }
 
@@ -126,6 +161,7 @@ export class ForYouService {
     assertValidLimit(limit);
     const { group, baseline, latestYear } = forYou;
 
+    // Without a baseline the LEFT JOIN matches nothing, so baselinePer1000 is null.
     const rows = await this.db.query<
       DrugRow & { per1000: number; baselinePer1000: number | null }
     >(
@@ -146,9 +182,9 @@ export class ForYouService {
         group.region,
         group.gender,
         group.ageGroup,
-        baseline.region,
-        baseline.gender,
-        baseline.ageGroup,
+        baseline?.region ?? null,
+        baseline?.gender ?? null,
+        baseline?.ageGroup ?? null,
         MIN_PATIENTS,
         limit,
       ],
@@ -161,12 +197,12 @@ export class ForYouService {
     }));
   }
 
-  rising(forYou: ForYou, limit: number): Promise<GrowthItem[]> {
-    return this.rankByGrowth(forYou, limit, 'rising');
+  rising(changes: Changes, limit: number): Promise<GrowthItem[]> {
+    return this.rankByGrowth(changes, limit, 'rising');
   }
 
-  declining(forYou: ForYou, limit: number): Promise<GrowthItem[]> {
-    return this.rankByGrowth(forYou, limit, 'declining');
+  declining(changes: Changes, limit: number): Promise<GrowthItem[]> {
+    return this.rankByGrowth(changes, limit, 'declining');
   }
 
   // Both directions require the drug to be in real use in BOTH the group and
@@ -178,6 +214,7 @@ export class ForYouService {
   ): Promise<ComparisonItem[]> {
     assertValidLimit(limit);
     const { group, baseline, latestYear } = forYou;
+    if (!baseline) return [];
 
     const rows = await this.db.query<
       DrugRow & { per1000: number; baselinePer1000: number; ratio: number }
@@ -221,12 +258,12 @@ export class ForYouService {
   // Rising needs real use today; declining needs real use at the start, so a
   // drug that has nearly disappeared still counts as a decline.
   private async rankByGrowth(
-    forYou: ForYou,
+    changes: Changes,
     limit: number,
     direction: 'rising' | 'declining',
   ): Promise<GrowthItem[]> {
     assertValidLimit(limit);
-    const { group, latestYear, trendStartYear } = forYou;
+    const { group, latestYear, startYear } = changes;
 
     const inUse =
       direction === 'rising'
@@ -249,7 +286,7 @@ export class ForYouService {
        LIMIT $8`,
       [
         latestYear,
-        trendStartYear,
+        startYear,
         group.region,
         group.gender,
         group.ageGroup,
@@ -261,7 +298,7 @@ export class ForYouService {
 
     const trends = await this.trendsFor(
       rows.map((row) => row.atcCode),
-      forYou,
+      changes,
     );
 
     return rows.map((row) => ({
@@ -274,9 +311,9 @@ export class ForYouService {
   // Sparse data (no row = zero), so every year in the range gets a value.
   private async trendsFor(
     atcCodes: string[],
-    forYou: ForYou,
+    changes: Changes,
   ): Promise<Map<string, { year: number; per1000: number }[]>> {
-    const { group, latestYear, trendStartYear } = forYou;
+    const { group, latestYear, startYear } = changes;
     const rows = await this.db.query<{
       atcCode: string;
       year: number;
@@ -291,7 +328,7 @@ export class ForYouService {
         group.region,
         group.gender,
         group.ageGroup,
-        trendStartYear,
+        startYear,
         latestYear,
       ],
     );
@@ -299,8 +336,8 @@ export class ForYouService {
     const trends = new Map<string, { year: number; per1000: number }[]>();
     for (const atcCode of atcCodes) {
       const years = Array.from(
-        { length: latestYear - trendStartYear + 1 },
-        (_, index) => trendStartYear + index,
+        { length: latestYear - startYear + 1 },
+        (_, index) => startYear + index,
       );
       trends.set(
         atcCode,

@@ -24,19 +24,28 @@ export class ComparisonGroup {
 @ObjectType()
 export class ForYou {
   group!: DemographicGroup;
-  baseline!: DemographicGroup;
+  baseline!: DemographicGroup | null;
 
   @Field(() => ComparisonGroup, {
+    nullable: true,
     description:
-      'The group moreCommon, lessCommon and mostDispensed compare against',
+      'The group moreCommon, lessCommon and mostDispensed compare against; null without a region, and those comparisons are then empty',
   })
-  comparedWith!: ComparisonGroup;
+  comparedWith!: ComparisonGroup | null;
 
   @Field(() => Int)
   latestYear!: number;
+}
+
+@ObjectType({
+  description: 'How the group changed between startYear and the latest year',
+})
+export class Changes {
+  group!: DemographicGroup;
+  latestYear!: number;
 
   @Field(() => Int)
-  trendStartYear!: number;
+  startYear!: number;
 }
 
 @ObjectType()
@@ -84,8 +93,7 @@ export class GrowthItem {
   drug!: Drug;
 
   @Field(() => Float, {
-    description:
-      'Rate in the latest year divided by the rate in trendStartYear',
+    description: 'Rate in the latest year divided by the rate in startYear',
   })
   growth!: number;
 
