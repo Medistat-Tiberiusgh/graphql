@@ -12,6 +12,7 @@ import { GendersModule } from './genders/genders.module';
 import { AuthModule } from './user/auth/auth.module';
 import { UserMedicationsModule } from './user/medications/medications.module';
 import { MeModule } from './user/me/me.module';
+import { ForYouModule } from './for-you/for-you.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { MeModule } from './user/me/me.module';
     GendersModule,
     UserMedicationsModule,
     MeModule,
+    ForYouModule,
   ],
 })
 export class AppModule {}

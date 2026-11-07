@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
+import { AppError } from '../../common/app-error';
+import { assertDimensionExists } from '../../common/demographics';
 
 export interface User {
   id: string;
@@ -79,6 +81,15 @@ export class UsersService {
               ON CONFLICT (user_id, atc) DO NOTHING`,
         params: [survivorId, mergedId],
       },
+      {
+        sql: `UPDATE users AS survivor
+              SET region_id = COALESCE(survivor.region_id, merged.region_id),
+                  gender_id = COALESCE(survivor.gender_id, merged.gender_id),
+                  age_group_id = COALESCE(survivor.age_group_id, merged.age_group_id)
+              FROM users AS merged
+              WHERE survivor.id = $1 AND merged.id = $2`,
+        params: [survivorId, mergedId],
+      },
       { sql: 'DELETE FROM users WHERE id = $1', params: [mergedId] },
     ]);
   }
@@ -104,6 +115,48 @@ export class UsersService {
        SELECT ${USER_COLUMNS} FROM new_user`,
       [email, emailVerified, provider, providerUid],
     );
+    return rows[0];
+  }
+
+  async updateProfile(
+    userId: string,
+    profile: {
+      regionId: number | null;
+      genderId: number | null;
+      ageGroupId: number | null;
+    },
+  ): Promise<User> {
+    await assertDimensionExists(
+      this.db,
+      'region',
+      profile.regionId,
+      'BAD_USER_INPUT',
+    );
+    await assertDimensionExists(
+      this.db,
+      'gender',
+      profile.genderId,
+      'BAD_USER_INPUT',
+    );
+    await assertDimensionExists(
+      this.db,
+      'ageGroup',
+      profile.ageGroupId,
+      'BAD_USER_INPUT',
+    );
+
+    const rows = await this.db.query<User>(
+      `UPDATE users
+       SET region_id = $2, gender_id = $3, age_group_id = $4
+       WHERE id = $1
+       RETURNING ${USER_COLUMNS}`,
+      [userId, profile.regionId, profile.genderId, profile.ageGroupId],
+    );
+
+    if (!rows.length) {
+      throw new AppError('User not found', 'NOT_FOUND');
+    }
+
     return rows[0];
   }
 

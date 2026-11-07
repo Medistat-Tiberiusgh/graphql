@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { AppError } from '../../../common/app-error';
 import { addParam } from '../../../common/sql-helpers';
+import {
+  TOTAL_AGE_GROUP,
+  TOTAL_GENDER,
+  TOTAL_REGION,
+  assertDimensionExists,
+} from '../../../common/demographics';
 import { DatabaseService } from '../../../database/database.service';
 import {
   AgeSplitPoint,
@@ -9,11 +15,6 @@ import {
   RegionalStat,
   TrendPoint,
 } from './insights.model';
-
-// IDs for the pre-aggregated "total" rows in the source data
-const TOTAL_GENDER = 3; // "Båda könen"
-const TOTAL_AGE_GROUP = 99; // "Totalt"
-const TOTAL_REGION = 0; // "Riket"
 
 interface RegionalPopularityFilters {
   year?: number;
@@ -54,35 +55,17 @@ export class InsightsService {
       throw new AppError(`Drug with ATC code "${atc}" not found`, 'NOT_FOUND');
   }
 
-  // `table` is hardcoded by callers — never user input — so interpolation is safe here.
-  private async validateExists(
-    table: string,
-    id: number,
-    label: string,
-  ): Promise<void> {
-    const rows = await this.db.query(`SELECT 1 FROM ${table} WHERE id = $1`, [
-      id,
-    ]);
-    if (!rows.length)
-      throw new AppError(`${label} ${id} not found`, 'NOT_FOUND');
+  // GraphQL hands omitted args over as undefined and explicit ones as null.
+  private validateRegion(id?: number | null): Promise<void> {
+    return assertDimensionExists(this.db, 'region', id ?? null, 'NOT_FOUND');
   }
 
-  private validateRegion(id?: number | null): Promise<void> | undefined {
-    return id == null
-      ? undefined
-      : this.validateExists('regions', id, 'Region');
+  private validateGender(id?: number | null): Promise<void> {
+    return assertDimensionExists(this.db, 'gender', id ?? null, 'NOT_FOUND');
   }
 
-  private validateGender(id?: number | null): Promise<void> | undefined {
-    return id == null
-      ? undefined
-      : this.validateExists('genders', id, 'Gender');
-  }
-
-  private validateAgeGroup(id?: number | null): Promise<void> | undefined {
-    return id == null
-      ? undefined
-      : this.validateExists('age_groups', id, 'Age group');
+  private validateAgeGroup(id?: number | null): Promise<void> {
+    return assertDimensionExists(this.db, 'ageGroup', id ?? null, 'NOT_FOUND');
   }
 
   async getRegionalPopularity(
