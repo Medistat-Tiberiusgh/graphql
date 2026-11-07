@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database/database.module';
-import { ForYouResolver } from './for-you.resolver';
+import { AuthModule } from '../user/auth/auth.module';
+import { ForYouResolver, MeForYouResolver } from './for-you.resolver';
 import { ForYouService } from './for-you.service';
 
 @Module({
-  imports: [DatabaseModule],
-  providers: [ForYouService, ForYouResolver],
+  imports: [DatabaseModule, AuthModule],
+  providers: [ForYouService, ForYouResolver, MeForYouResolver],
 })
 export class ForYouModule {}

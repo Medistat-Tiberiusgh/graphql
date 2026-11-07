@@ -27,7 +27,8 @@ export class ForYou {
   baseline!: DemographicGroup;
 
   @Field(() => ComparisonGroup, {
-    description: 'The group every ratio in standsOut is measured against',
+    description:
+      'The group moreCommon, lessCommon and mostDispensed compare against',
   })
   comparedWith!: ComparisonGroup;
 
@@ -39,17 +40,18 @@ export class ForYou {
 }
 
 @ObjectType()
-export class StandsOutItem {
+export class ComparisonItem {
   @Field(() => Drug)
   drug!: Drug;
 
-  @Field(() => Float, {
-    description: 'How many times more common in the group than in the baseline',
-  })
-  ratio!: number;
-
   @Field(() => Float)
   per1000!: number;
+
+  @Field(() => Float, { description: 'Rate in the comparedWith group' })
+  baselinePer1000!: number;
+
+  @Field(() => Float, { description: 'per1000 divided by baselinePer1000' })
+  ratio!: number;
 }
 
 @ObjectType()
@@ -59,6 +61,12 @@ export class MostDispensedItem {
 
   @Field(() => Float)
   per1000!: number;
+
+  @Field(() => Float, {
+    nullable: true,
+    description: 'Rate in the comparedWith group; null when it has no data',
+  })
+  baselinePer1000!: number | null;
 }
 
 @ObjectType()
@@ -71,7 +79,7 @@ export class YearRate {
 }
 
 @ObjectType()
-export class RisingItem {
+export class GrowthItem {
   @Field(() => Drug)
   drug!: Drug;
 

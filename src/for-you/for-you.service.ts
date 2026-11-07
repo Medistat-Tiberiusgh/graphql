@@ -9,11 +9,11 @@ import { DatabaseService } from '../database/database.service';
 import { Drug } from '../drugs/drug.model';
 import {
   ComparisonGroup,
+  ComparisonItem,
   DemographicGroup,
   ForYou,
+  GrowthItem,
   MostDispensedItem,
-  RisingItem,
-  StandsOutItem,
 } from './for-you.model';
 
 // Small groups and rare drugs give unstable rates, so both floors must pass.
@@ -36,16 +36,28 @@ function toDrug(row: DrugRow): Drug {
   };
 }
 
-function groupFromProfile(profile: {
-  region?: number;
-  gender?: number;
-  ageGroup?: number;
-}): DemographicGroup {
+interface SavedDemographics {
+  regionId: number | null;
+  genderId: number | null;
+  ageGroupId: number | null;
+}
+
+function groupFromDemographics(
+  demographics: SavedDemographics,
+): DemographicGroup {
   return {
-    region: profile.region ?? TOTAL_REGION,
-    gender: profile.gender ?? TOTAL_GENDER,
-    ageGroup: profile.ageGroup ?? TOTAL_AGE_GROUP,
+    region: demographics.regionId ?? TOTAL_REGION,
+    gender: demographics.genderId ?? TOTAL_GENDER,
+    ageGroup: demographics.ageGroupId ?? TOTAL_AGE_GROUP,
   };
+}
+
+function hasDemographics(demographics: SavedDemographics): boolean {
+  return (
+    demographics.regionId !== null ||
+    demographics.genderId !== null ||
+    demographics.ageGroupId !== null
+  );
 }
 
 // With a region, compare against the same gender/age in all of Sweden so the
@@ -82,20 +94,12 @@ function assertValidLimit(limit: number): void {
 export class ForYouService {
   constructor(private readonly db: DatabaseService) {}
 
-  async forProfile(profile: {
-    region?: number;
-    gender?: number;
-    ageGroup?: number;
-  }): Promise<ForYou> {
-    const { region, gender, ageGroup } = profile;
-    if (region == null && gender == null && ageGroup == null) {
-      throw new AppError(
-        'Provide at least one of region, gender or ageGroup',
-        'BAD_USER_INPUT',
-      );
-    }
+  async forDemographics(
+    demographics: SavedDemographics,
+  ): Promise<ForYou | null> {
+    if (!hasDemographics(demographics)) return null;
 
-    const group = groupFromProfile(profile);
+    const group = groupFromDemographics(demographics);
     const baseline = baselineFor(group);
     const latestYear = await this.latestYear();
     return {
@@ -107,15 +111,80 @@ export class ForYouService {
     };
   }
 
-  async standsOut(forYou: ForYou, limit: number): Promise<StandsOutItem[]> {
+  moreCommon(forYou: ForYou, limit: number): Promise<ComparisonItem[]> {
+    return this.compareWithBaseline(forYou, limit, 'DESC');
+  }
+
+  lessCommon(forYou: ForYou, limit: number): Promise<ComparisonItem[]> {
+    return this.compareWithBaseline(forYou, limit, 'ASC');
+  }
+
+  async mostDispensed(
+    forYou: ForYou,
+    limit: number,
+  ): Promise<MostDispensedItem[]> {
     assertValidLimit(limit);
     const { group, baseline, latestYear } = forYou;
 
     const rows = await this.db.query<
-      DrugRow & { ratio: number; per1000: number }
+      DrugRow & { per1000: number; baselinePer1000: number | null }
     >(
       `SELECT drug.atc AS "atcCode", drug.name, drug.narcotic_class AS "narcoticClass",
               mine.per_1000::float AS "per1000",
+              baseline.per_1000::float AS "baselinePer1000"
+       FROM prescription_data mine
+       LEFT JOIN prescription_data baseline
+         ON baseline.atc = mine.atc AND baseline.year = mine.year
+        AND baseline.region = $5 AND baseline.gender = $6 AND baseline.age_group = $7
+       JOIN drugs drug ON drug.atc = mine.atc
+       WHERE mine.year = $1 AND mine.region = $2 AND mine.gender = $3 AND mine.age_group = $4
+         AND mine.num_patients >= $8
+       ORDER BY mine.per_1000 DESC
+       LIMIT $9`,
+      [
+        latestYear,
+        group.region,
+        group.gender,
+        group.ageGroup,
+        baseline.region,
+        baseline.gender,
+        baseline.ageGroup,
+        MIN_PATIENTS,
+        limit,
+      ],
+    );
+
+    return rows.map((row) => ({
+      drug: toDrug(row),
+      per1000: row.per1000,
+      baselinePer1000: row.baselinePer1000,
+    }));
+  }
+
+  rising(forYou: ForYou, limit: number): Promise<GrowthItem[]> {
+    return this.rankByGrowth(forYou, limit, 'rising');
+  }
+
+  declining(forYou: ForYou, limit: number): Promise<GrowthItem[]> {
+    return this.rankByGrowth(forYou, limit, 'declining');
+  }
+
+  // Both directions require the drug to be in real use in BOTH the group and
+  // the baseline, so a rare drug can't top either list on a tiny rate.
+  private async compareWithBaseline(
+    forYou: ForYou,
+    limit: number,
+    order: 'ASC' | 'DESC',
+  ): Promise<ComparisonItem[]> {
+    assertValidLimit(limit);
+    const { group, baseline, latestYear } = forYou;
+
+    const rows = await this.db.query<
+      DrugRow & { per1000: number; baselinePer1000: number; ratio: number }
+    >(
+      `SELECT drug.atc AS "atcCode", drug.name, drug.narcotic_class AS "narcoticClass",
+              mine.per_1000::float AS "per1000",
+              baseline.per_1000::float AS "baselinePer1000",
               (mine.per_1000 / baseline.per_1000)::float AS ratio
        FROM prescription_data mine
        JOIN prescription_data baseline
@@ -123,9 +192,9 @@ export class ForYouService {
         AND baseline.region = $5 AND baseline.gender = $6 AND baseline.age_group = $7
        JOIN drugs drug ON drug.atc = mine.atc
        WHERE mine.year = $1 AND mine.region = $2 AND mine.gender = $3 AND mine.age_group = $4
-         AND mine.num_patients >= $8 AND mine.per_1000 >= $9
-         AND baseline.per_1000 > 0
-       ORDER BY ratio DESC
+         AND mine.num_patients >= $8
+         AND mine.per_1000 >= $9 AND baseline.per_1000 >= $9
+       ORDER BY ratio ${order}
        LIMIT $10`,
       [
         latestYear,
@@ -143,43 +212,27 @@ export class ForYouService {
 
     return rows.map((row) => ({
       drug: toDrug(row),
-      ratio: row.ratio,
       per1000: row.per1000,
+      baselinePer1000: row.baselinePer1000,
+      ratio: row.ratio,
     }));
   }
 
-  async mostDispensed(
+  // Rising needs real use today; declining needs real use at the start, so a
+  // drug that has nearly disappeared still counts as a decline.
+  private async rankByGrowth(
     forYou: ForYou,
     limit: number,
-  ): Promise<MostDispensedItem[]> {
-    assertValidLimit(limit);
-    const { group, latestYear } = forYou;
-
-    const rows = await this.db.query<DrugRow & { per1000: number }>(
-      `SELECT drug.atc AS "atcCode", drug.name, drug.narcotic_class AS "narcoticClass",
-              mine.per_1000::float AS "per1000"
-       FROM prescription_data mine
-       JOIN drugs drug ON drug.atc = mine.atc
-       WHERE mine.year = $1 AND mine.region = $2 AND mine.gender = $3 AND mine.age_group = $4
-         AND mine.num_patients >= $5
-       ORDER BY mine.per_1000 DESC
-       LIMIT $6`,
-      [
-        latestYear,
-        group.region,
-        group.gender,
-        group.ageGroup,
-        MIN_PATIENTS,
-        limit,
-      ],
-    );
-
-    return rows.map((row) => ({ drug: toDrug(row), per1000: row.per1000 }));
-  }
-
-  async rising(forYou: ForYou, limit: number): Promise<RisingItem[]> {
+    direction: 'rising' | 'declining',
+  ): Promise<GrowthItem[]> {
     assertValidLimit(limit);
     const { group, latestYear, trendStartYear } = forYou;
+
+    const inUse =
+      direction === 'rising'
+        ? 'latest.num_patients >= $6 AND latest.per_1000 >= $7 AND start.per_1000 >= $7'
+        : 'start.num_patients >= $6 AND start.per_1000 >= $7';
+    const order = direction === 'rising' ? 'DESC' : 'ASC';
 
     const rows = await this.db.query<DrugRow & { growth: number }>(
       `SELECT drug.atc AS "atcCode", drug.name, drug.narcotic_class AS "narcoticClass",
@@ -191,9 +244,8 @@ export class ForYouService {
         AND start.age_group = latest.age_group
        JOIN drugs drug ON drug.atc = latest.atc
        WHERE latest.year = $1 AND latest.region = $3 AND latest.gender = $4 AND latest.age_group = $5
-         AND latest.num_patients >= $6
-         AND latest.per_1000 >= $7 AND start.per_1000 >= $7
-       ORDER BY growth DESC
+         AND ${inUse}
+       ORDER BY growth ${order}
        LIMIT $8`,
       [
         latestYear,

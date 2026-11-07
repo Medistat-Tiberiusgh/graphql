@@ -1,41 +1,52 @@
+import { Args, Int, Parent, ResolveField, Resolver } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../user/auth/jwt.guard';
+import { Me } from '../user/me/me.model';
 import {
-  Args,
-  Int,
-  Parent,
-  Query,
-  ResolveField,
-  Resolver,
-} from '@nestjs/graphql';
-import {
+  ComparisonItem,
   ForYou,
+  GrowthItem,
   MostDispensedItem,
-  RisingItem,
-  StandsOutItem,
 } from './for-you.model';
 import { ForYouService } from './for-you.service';
+
+@Resolver(() => Me)
+@UseGuards(JwtAuthGuard)
+export class MeForYouResolver {
+  constructor(private readonly forYouService: ForYouService) {}
+
+  @ResolveField(() => ForYou, {
+    nullable: true,
+    description:
+      "Highlights for the signed-in user's saved demographics; null when none are saved",
+  })
+  forYou(@Parent() me: Me): Promise<ForYou | null> {
+    return this.forYouService.forDemographics(me);
+  }
+}
 
 @Resolver(() => ForYou)
 export class ForYouResolver {
   constructor(private readonly forYouService: ForYouService) {}
 
-  @Query(() => ForYou, {
-    description:
-      'Highlights for a demographic group. Omitted fields fall back to the national totals.',
+  @ResolveField(() => [ComparisonItem], {
+    description: 'Drugs dispensed most above the comparedWith rate',
   })
-  forYou(
-    @Args('region', { type: () => Int, nullable: true }) region?: number,
-    @Args('gender', { type: () => Int, nullable: true }) gender?: number,
-    @Args('ageGroup', { type: () => Int, nullable: true }) ageGroup?: number,
-  ): Promise<ForYou> {
-    return this.forYouService.forProfile({ region, gender, ageGroup });
-  }
-
-  @ResolveField(() => [StandsOutItem])
-  standsOut(
+  moreCommon(
     @Parent() forYou: ForYou,
     @Args('limit', { type: () => Int, defaultValue: 5 }) limit: number,
-  ): Promise<StandsOutItem[]> {
-    return this.forYouService.standsOut(forYou, limit);
+  ): Promise<ComparisonItem[]> {
+    return this.forYouService.moreCommon(forYou, limit);
+  }
+
+  @ResolveField(() => [ComparisonItem], {
+    description: 'Drugs dispensed most below the comparedWith rate',
+  })
+  lessCommon(
+    @Parent() forYou: ForYou,
+    @Args('limit', { type: () => Int, defaultValue: 5 }) limit: number,
+  ): Promise<ComparisonItem[]> {
+    return this.forYouService.lessCommon(forYou, limit);
   }
 
   @ResolveField(() => [MostDispensedItem])
@@ -46,11 +57,19 @@ export class ForYouResolver {
     return this.forYouService.mostDispensed(forYou, limit);
   }
 
-  @ResolveField(() => [RisingItem])
+  @ResolveField(() => [GrowthItem])
   rising(
     @Parent() forYou: ForYou,
     @Args('limit', { type: () => Int, defaultValue: 5 }) limit: number,
-  ): Promise<RisingItem[]> {
+  ): Promise<GrowthItem[]> {
     return this.forYouService.rising(forYou, limit);
+  }
+
+  @ResolveField(() => [GrowthItem])
+  declining(
+    @Parent() forYou: ForYou,
+    @Args('limit', { type: () => Int, defaultValue: 5 }) limit: number,
+  ): Promise<GrowthItem[]> {
+    return this.forYouService.declining(forYou, limit);
   }
 }
